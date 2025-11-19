@@ -68,30 +68,29 @@ export function PriceAnalysis({ searchParams }: PriceAnalysisProps) {
 
   return (
     <div className="container mx-auto px-4">
-      <div className="mb-8">
-        <h2 className="text-3xl font-bold mb-2">
-          {'การวิเคราะห์ราคา - '}{searchParams.originName}{' → '}{searchParams.destinationName}
-        </h2>
-        <p className="text-muted-foreground">
-          {'สำหรับการเดินทาง '}{searchParams.durationRange.min}{'-'}{searchParams.durationRange.max}{' วัน'}
-          {searchParams.selectedAirlines.length > 0 && (
-            <span className="ml-2">
-              {' (สายการบิน: '}
-              {searchParams.selectedAirlines.length}{' สายการบิน)'}
-            </span>
-          )}
-        </p>
-      </div>
-
-      {/* Divider */}
-      <div className="border-t border-border my-12"></div>
-
       {/* Seasonal Breakdown */}
       <div className="mb-12">
         <SeasonalBreakdown seasons={seasons} />
       </div>
 
       {/* Best Deal Recommendation */}
+      <div className="mb-8">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold mb-2">
+            {'การวิเคราะห์ราคา - '}{searchParams.originName}{' → '}{searchParams.destinationName}
+          </h2>
+          <p className="text-muted-foreground">
+            {'สำหรับการเดินทาง '}{searchParams.durationRange.min}{'-'}{searchParams.durationRange.max}{' วัน'}
+            {searchParams.selectedAirlines.length > 0 && (
+              <span className="ml-2">
+                {' (สายการบิน: '}
+                {searchParams.selectedAirlines.length}{' สายการบิน)'}
+              </span>
+            )}
+          </p>
+        </div>
+      </div>
+
       <Card className="p-6 mb-8 border-2 border-accent bg-accent/5">
         <div className="flex items-start gap-4">
           <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center shrink-0">
