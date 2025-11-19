@@ -1,0 +1,62 @@
+'use client'
+
+import { useState } from 'react'
+import { Header } from '@/components/header'
+import { FlightSearchForm, FlightSearchParams } from '@/components/flight-search-form'
+import { PriceAnalysis } from '@/components/price-analysis'
+import { PopularDestinations } from '@/components/popular-destinations'
+import { FlightStats } from '@/components/flight-stats'
+
+export default function HomePage() {
+  const [searchParams, setSearchParams] = useState<FlightSearchParams | null>(null)
+
+  const handleSearch = (params: FlightSearchParams) => {
+    setSearchParams(params)
+    // Scroll to analysis section
+    setTimeout(() => {
+      const analysisSection = document.getElementById('analysis')
+      if (analysisSection) {
+        analysisSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
+    }, 100)
+  }
+
+  return (
+    <main className="min-h-screen bg-background">
+      <Header />
+      
+      {/* Hero Section with Search Form */}
+      <section id="search" className="relative bg-primary py-16">
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto text-center mb-8">
+            <h1 className="text-4xl md:text-5xl font-bold text-primary-foreground mb-4 text-balance">
+              {'ค้นหาช่วงเวลาที่ดีที่สุดในการเดินทาง'}
+            </h1>
+            <p className="text-lg text-primary-foreground/90 text-pretty">
+              {'วิเคราะห์ราคาตั๋วเครื่องบินตามฤดูกาล แนะนำช่วงที่ถูกที่สุดให้คุณ'}
+            </p>
+          </div>
+          
+          <FlightSearchForm onSearch={handleSearch} />
+        </div>
+      </section>
+
+      {/* Price Analysis Section */}
+      <section id="analysis" className="py-12">
+        <PriceAnalysis searchParams={searchParams} />
+      </section>
+
+      {/* Flight Statistics Section */}
+      <section className="py-12">
+        <div className="container mx-auto px-4">
+          <FlightStats />
+        </div>
+      </section>
+
+      {/* Popular Destinations Section */}
+      <section id="destinations" className="py-12 bg-secondary/30">
+        <PopularDestinations />
+      </section>
+    </main>
+  )
+}
