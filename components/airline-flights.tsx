@@ -4,116 +4,11 @@ import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Plane, Clock, Calendar } from 'lucide-react'
 import { FlightSearchParams } from '@/components/flight-search-form'
-
-interface Flight {
-  airline: string
-  flightNumber: string
-  departureTime: string
-  arrivalTime: string
-  duration: string
-  price: number
-  date: string
-}
+import { generateFlightsForAirline, Flight } from '@/services/mock-flights'
 
 interface AirlineFlightsProps {
   searchParams: FlightSearchParams
   selectedAirlines: string[]
-}
-
-// Map airline values to display names
-const airlineMap: Record<string, string> = {
-  'thai-airways': 'Thai Airways',
-  'thai-airasia': 'Thai AirAsia',
-  'thai-airasia-x': 'Thai AirAsia X',
-  'thai-lion-air': 'Thai Lion Air',
-  'thai-vietjet': 'Thai Vietjet Air',
-  'bangkok-airways': 'Bangkok Airways',
-  'nok-air': 'Nok Air',
-}
-
-// Generate mock flight data for each airline
-function generateFlightsForAirline(
-  airline: string,
-  origin: string,
-  destination: string,
-  startDate?: Date,
-  endDate?: Date
-): Flight[] {
-  const airlineName = airlineMap[airline] || airline
-  const basePrice = getBasePriceForRoute(origin, destination, airline)
-  
-  // Generate 3-5 flights per airline
-  const flightCount = 3 + Math.floor(Math.random() * 3)
-  const flights: Flight[] = []
-  
-  const dates = startDate ? [startDate] : [
-    new Date(2025, 4, 15), // May 15
-    new Date(2025, 4, 20), // May 20
-    new Date(2025, 5, 1),  // June 1
-  ]
-  
-  for (let i = 0; i < flightCount; i++) {
-    const date = dates[i % dates.length]
-    const dateStr = date.toLocaleDateString('th-TH', { 
-      day: 'numeric', 
-      month: 'long', 
-      year: 'numeric' 
-    })
-    
-    // Generate random times
-    const departureHour = 6 + Math.floor(Math.random() * 16) // 6 AM - 10 PM
-    const departureMinute = Math.floor(Math.random() * 4) * 15 // 0, 15, 30, 45
-    const durationHours = 1 + Math.floor(Math.random() * 2) // 1-2 hours for domestic
-    const durationMinutes = Math.floor(Math.random() * 4) * 15
-    
-    const arrivalHour = departureHour + durationHours
-    const arrivalMinute = departureMinute + durationMinutes
-    
-    flights.push({
-      airline: airlineName,
-      flightNumber: `${airline.substring(0, 2).toUpperCase()}${100 + i}${Math.floor(Math.random() * 10)}`,
-      departureTime: `${departureHour.toString().padStart(2, '0')}:${departureMinute.toString().padStart(2, '0')}`,
-      arrivalTime: `${(arrivalHour % 24).toString().padStart(2, '0')}:${(arrivalMinute % 60).toString().padStart(2, '0')}`,
-      duration: `${durationHours}h ${durationMinutes}m`,
-      price: Math.round(basePrice * (0.9 + Math.random() * 0.2)), // ±10% variation
-      date: dateStr,
-    })
-  }
-  
-  return flights.sort((a, b) => a.price - b.price) // Sort by price
-}
-
-function getBasePriceForRoute(origin: string, destination: string, airline: string): number {
-  // Base prices vary by airline type
-  const airlineBasePrices: Record<string, number> = {
-    'thai-airways': 4000,
-    'bangkok-airways': 3800,
-    'thai-airasia': 2500,
-    'thai-airasia-x': 2800,
-    'thai-lion-air': 2300,
-    'thai-vietjet': 2400,
-    'nok-air': 2200,
-  }
-  
-  const base = airlineBasePrices[airline] || 3000
-  
-  // Adjust based on route distance (simplified)
-  const routeMultipliers: Record<string, Record<string, number>> = {
-    'bangkok': {
-      'chiang-mai': 1.0,
-      'phuket': 0.95,
-      'hat-yai': 0.9,
-      'udon-thani': 0.85,
-    },
-  }
-  
-  // Check direct route first, then reverse route
-  let multiplier = routeMultipliers[origin]?.[destination]
-  if (multiplier === undefined) {
-    multiplier = routeMultipliers[destination]?.[origin] || 1.0
-  }
-  
-  return base * multiplier
 }
 
 export function AirlineFlights({ searchParams, selectedAirlines }: AirlineFlightsProps) {
