@@ -2,7 +2,7 @@
 
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { TrendingDown, Info } from 'lucide-react'
+import { TrendingDown, Info, AlertCircle, TrendingUp } from 'lucide-react'
 import { SeasonData } from '@/lib/flight-analysis'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { defaultSeasons } from '@/services/mock-seasons'
@@ -40,6 +40,13 @@ export function SeasonalBreakdown({ seasons: propSeasons, recommendedPeriod }: S
     })
   })
 
+  // Get current season
+  const currentSeason = monthSeasonMap[currentMonth] || 'normal'
+
+  // Get low season months for recommendation
+  const lowSeasonData = seasons.find(s => s.type === 'low')
+  const lowSeasonMonths = lowSeasonData?.months.join(', ') || ''
+
   // Get season color
   const getSeasonColor = (type: 'high' | 'normal' | 'low') => {
     switch (type) {
@@ -51,6 +58,54 @@ export function SeasonalBreakdown({ seasons: propSeasons, recommendedPeriod }: S
         return 'bg-red-500'
     }
   }
+
+  // Get recommendation styling based on current season
+  const getRecommendationConfig = () => {
+    switch (currentSeason) {
+      case 'low':
+        return {
+          borderColor: 'border-accent',
+          bgColor: 'bg-accent/5',
+          iconBg: 'bg-accent',
+          iconColor: 'text-accent-foreground',
+          icon: TrendingDown,
+          badgeBg: 'bg-accent text-accent-foreground',
+          badgeText: 'ราคาถูกที่สุด',
+          priceColor: 'text-accent',
+          savingsColor: 'text-green-600',
+          showRecommendation: true,
+        }
+      case 'high':
+        return {
+          borderColor: 'border-red-500',
+          bgColor: 'bg-red-500/5',
+          iconBg: 'bg-red-500',
+          iconColor: 'text-white',
+          icon: AlertCircle,
+          badgeBg: 'bg-red-500 text-white',
+          badgeText: 'High Season',
+          priceColor: 'text-red-600',
+          savingsColor: 'text-red-600',
+          showRecommendation: false,
+        }
+      case 'normal':
+        return {
+          borderColor: 'border-blue-500',
+          bgColor: 'bg-blue-500/5',
+          iconBg: 'bg-blue-500',
+          iconColor: 'text-white',
+          icon: TrendingUp,
+          badgeBg: 'bg-blue-500 text-white',
+          badgeText: 'Normal Season',
+          priceColor: 'text-blue-600',
+          savingsColor: 'text-blue-600',
+          showRecommendation: false,
+        }
+    }
+  }
+
+  const recConfig = getRecommendationConfig()
+  const RecIcon = recConfig.icon
 
   return (
     <div>
@@ -80,43 +135,74 @@ export function SeasonalBreakdown({ seasons: propSeasons, recommendedPeriod }: S
 
       {/* Best Deal Recommendation */}
       {recommendedPeriod && (
-        <Card className="p-6 mb-6 border-2 border-accent bg-accent/5">
+        <Card className={`p-6 mb-6 border-2 ${recConfig.borderColor} ${recConfig.bgColor}`}>
           <div className="flex items-start gap-4">
-            <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center shrink-0">
-              <TrendingDown className="w-6 h-6 text-accent-foreground" />
+            <div className={`w-12 h-12 ${recConfig.iconBg} rounded-full flex items-center justify-center shrink-0`}>
+              <RecIcon className={`w-6 h-6 ${recConfig.iconColor}`} />
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
                 <h3 className="text-xl font-bold">{'คำแนะนำของเรา'}</h3>
-                <Badge className="bg-accent text-accent-foreground">{'ราคาถูกที่สุด'}</Badge>
+                <Badge className={recConfig.badgeBg}>{recConfig.badgeText}</Badge>
               </div>
-              <p className="text-lg mb-4 leading-relaxed">
-                {'ช่วงที่แนะนำคือ'} <strong>{recommendedPeriod.startDate}</strong>
-                {' - '}<strong>{recommendedPeriod.endDate}</strong>
-                {' (กลับวันที่ '}{recommendedPeriod.returnDate}{')'}
-                {' ('}
-                {recommendedPeriod.season === 'low' ? 'Low Season' : 
-                 recommendedPeriod.season === 'normal' ? 'Normal Season' : 'High Season'}
-                {')'}
-              </p>
-              <div className="grid md:grid-cols-3 gap-4">
-                <div>
-                  <div className="text-sm text-muted-foreground mb-1">{'ราคาไป-กลับ'}</div>
-                  <div className="text-2xl font-bold text-accent">
-                    {'฿'}{recommendedPeriod.price.toLocaleString()}
+              
+              {currentSeason === 'low' ? (
+                <>
+                  <p className="text-lg mb-4 leading-relaxed">
+                    {'ช่วงที่แนะนำคือ'} <strong>{recommendedPeriod.startDate}</strong>
+                    {' - '}<strong>{recommendedPeriod.endDate}</strong>
+                    {' (กลับวันที่ '}{recommendedPeriod.returnDate}{')'}
+                    {' ('}
+                    {recommendedPeriod.season === 'low' ? 'Low Season' : 
+                     recommendedPeriod.season === 'normal' ? 'Normal Season' : 'High Season'}
+                    {')'}
+                  </p>
+                  <div className="grid md:grid-cols-3 gap-4">
+                    <div>
+                      <div className="text-sm text-muted-foreground mb-1">{'ราคาไป-กลับ'}</div>
+                      <div className={`text-2xl font-bold ${recConfig.priceColor}`}>
+                        {'฿'}{recommendedPeriod.price.toLocaleString()}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground mb-1">{'สายการบิน'}</div>
+                      <div className="text-lg font-semibold">{recommendedPeriod.airline}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground mb-1">{'ประหยัดได้ถึง'}</div>
+                      <div className={`text-2xl font-bold ${recConfig.savingsColor}`}>
+                        {'฿'}{recommendedPeriod.savings.toLocaleString()}
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground mb-1">{'สายการบิน'}</div>
-                  <div className="text-lg font-semibold">{recommendedPeriod.airline}</div>
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground mb-1">{'ประหยัดได้ถึง'}</div>
-                  <div className="text-2xl font-bold text-green-600">
-                    {'฿'}{recommendedPeriod.savings.toLocaleString()}
+                </>
+              ) : (
+                <>
+                  <p className="text-lg mb-4 leading-relaxed">
+                    {currentSeason === 'high' 
+                      ? 'ตอนนี้อยู่ในช่วง High Season ราคาตั๋วเครื่องบินสูงสุด แนะนำให้จองในช่วง Low Season เพื่อประหยัดค่าใช้จ่าย'
+                      : 'ตอนนี้อยู่ในช่วง Normal Season แนะนำให้จองในช่วง Low Season เพื่อประหยัดค่าใช้จ่ายมากขึ้น'}
+                  </p>
+                  <div className="p-4 bg-background rounded-lg border">
+                    <div className="text-sm text-muted-foreground mb-2">{'แนะนำจองในช่วง Low Season'}</div>
+                    <div className="text-lg font-semibold text-green-600">{lowSeasonMonths}</div>
+                    {lowSeasonData && (
+                      <div className="text-sm text-muted-foreground mt-2">
+                        {'ราคา: ฿'}{lowSeasonData.priceRange.min.toLocaleString()}
+                        {' - ฿'}{lowSeasonData.priceRange.max.toLocaleString()}
+                      </div>
+                    )}
                   </div>
-                </div>
-              </div>
+                  {currentSeason === 'high' && recommendedPeriod && (
+                    <div className="mt-4 pt-4 border-t">
+                      <div className="text-sm text-muted-foreground mb-2">{'ราคาปัจจุบัน (High Season)'}</div>
+                      <div className={`text-2xl font-bold ${recConfig.priceColor}`}>
+                        {'฿'}{recommendedPeriod.price.toLocaleString()}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </Card>
