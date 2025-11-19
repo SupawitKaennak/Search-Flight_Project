@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { PROVINCES, THAI_AIRLINES } from '@/services/constants'
 
 export interface FlightSearchParams {
   origin: string
@@ -37,39 +38,6 @@ export interface FlightSearchParams {
 interface FlightSearchFormProps {
   onSearch?: (params: FlightSearchParams) => void
 }
-
-const PROVINCES = [
-  { value: 'bangkok', label: 'กรุงเทพมหานคร' },
-  { value: 'chiang-mai', label: 'เชียงใหม่' },
-  { value: 'phuket', label: 'ภูเก็ต' },
-  { value: 'krabi', label: 'กระบี่' },
-  { value: 'samui', label: 'เกาะสมุย' },
-  { value: 'pattaya', label: 'พัทยา (ชลบุรี)' },
-  { value: 'hat-yai', label: 'หาดใหญ่ (สงขลา)' },
-  { value: 'udon-thani', label: 'อุดรธานี' },
-  { value: 'khon-kaen', label: 'ขอนแก่น' },
-  { value: 'nakhon-ratchasima', label: 'นครราชสีมา' },
-  { value: 'surat-thani', label: 'สุราษฎร์ธานี' },
-  { value: 'trang', label: 'ตรัง' },
-  { value: 'surin', label: 'สุรินทร์' },
-  { value: 'ubon-ratchathani', label: 'อุบลราชธานี' },
-  { value: 'nakhon-sawan', label: 'นครสวรรค์' },
-  { value: 'lampang', label: 'ลำปาง' },
-  { value: 'mae-hong-son', label: 'แม่ฮ่องสอน' },
-  { value: 'nan', label: 'น่าน' },
-  { value: 'phitsanulok', label: 'พิษณุโลก' },
-  { value: 'sukhothai', label: 'สุโขทัย' },
-]
-
-const THAI_AIRLINES = [
-  { value: 'thai-airways', label: 'Thai Airways' },
-  { value: 'thai-airasia', label: 'Thai AirAsia' },
-  { value: 'thai-airasia-x', label: 'Thai AirAsia X' },
-  { value: 'thai-lion-air', label: 'Thai Lion Air' },
-  { value: 'thai-vietjet', label: 'Thai Vietjet Air' },
-  { value: 'bangkok-airways', label: 'Bangkok Airways' },
-  { value: 'nok-air', label: 'Nok Air' },
-]
 
 export function FlightSearchForm({ onSearch }: FlightSearchFormProps) {
   const [origin, setOrigin] = useState('bangkok')

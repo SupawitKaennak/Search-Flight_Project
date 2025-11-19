@@ -1,45 +1,7 @@
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { TrendingUp, Users } from 'lucide-react'
-
-const destinations = [
-  {
-    province: 'เชียงใหม่',
-    city: 'เชียงใหม่',
-    searches: '12,450',
-    avgPrice: '฿3,500',
-    trend: '+15%',
-    popular: true,
-    image: '/chiang-mai.jpg',
-  },
-  {
-    province: 'ภูเก็ต',
-    city: 'ภูเก็ต',
-    searches: '9,820',
-    avgPrice: '฿3,200',
-    trend: '+22%',
-    popular: true,
-    image: '/phuket.jpg',
-  },
-  {
-    province: 'กระบี่',
-    city: 'กระบี่',
-    searches: '7,340',
-    avgPrice: '฿3,000',
-    trend: '+8%',
-    popular: false,
-    image: '/krabi.jpg',
-  },
-  {
-    province: 'หาดใหญ่',
-    city: 'หาดใหญ่ (สงขลา)',
-    searches: '6,120',
-    avgPrice: '฿2,500',
-    trend: '+18%',
-    popular: false,
-    image: '/hat-yai.jpg',
-  },
-]
+import { popularDestinations } from '@/services/mock-destinations'
 
 export function PopularDestinations() {
   return (
@@ -52,7 +14,7 @@ export function PopularDestinations() {
       </div>
 
       <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {destinations.map((dest) => (
+        {popularDestinations.map((dest) => (
           <Card key={dest.city} className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
             <div className="relative h-48 bg-muted">
               <img 

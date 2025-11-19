@@ -88,50 +88,8 @@ export function PriceAnalysis({ searchParams }: PriceAnalysisProps) {
 
       {/* Seasonal Breakdown */}
       <div className="mb-12">
-        <SeasonalBreakdown seasons={seasons} />
+        <SeasonalBreakdown seasons={seasons} recommendedPeriod={recommendedPeriod} />
       </div>
-
-      {/* Best Deal Recommendation */}
-      <Card className="p-6 mb-8 border-2 border-accent bg-accent/5">
-        <div className="flex items-start gap-4">
-          <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center shrink-0">
-            <TrendingDown className="w-6 h-6 text-accent-foreground" />
-          </div>
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2">
-              <h3 className="text-xl font-bold">{'คำแนะนำของเรา'}</h3>
-              <Badge className="bg-accent text-accent-foreground">{'ราคาถูกที่สุด'}</Badge>
-            </div>
-            <p className="text-lg mb-4 leading-relaxed">
-              {'ช่วงที่แนะนำคือ'} <strong>{recommendedPeriod.startDate}</strong>
-              {' - '}<strong>{recommendedPeriod.endDate}</strong>
-              {' (กลับวันที่ '}{recommendedPeriod.returnDate}{')'}
-              {' ('}
-              {recommendedPeriod.season === 'low' ? 'Low Season' : 
-               recommendedPeriod.season === 'normal' ? 'Normal Season' : 'High Season'}
-              {')'}
-            </p>
-            <div className="grid md:grid-cols-3 gap-4">
-              <div>
-                <div className="text-sm text-muted-foreground mb-1">{'ราคาไป-กลับ'}</div>
-                <div className="text-2xl font-bold text-accent">
-                  {'฿'}{recommendedPeriod.price.toLocaleString()}
-                </div>
-              </div>
-              <div>
-                <div className="text-sm text-muted-foreground mb-1">{'สายการบิน'}</div>
-                <div className="text-lg font-semibold">{recommendedPeriod.airline}</div>
-              </div>
-              <div>
-                <div className="text-sm text-muted-foreground mb-1">{'ประหยัดได้ถึง'}</div>
-                <div className="text-2xl font-bold text-green-600">
-                  {'฿'}{recommendedPeriod.savings.toLocaleString()}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </Card>
 
       {/* Price Comparison - If Go Before/After */}
       <div className="grid md:grid-cols-2 gap-4 mb-8">
