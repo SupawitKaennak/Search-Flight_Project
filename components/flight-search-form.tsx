@@ -1,12 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { Search, Plane, X, Calendar as CalendarIcon } from 'lucide-react'
+import { Search, Calendar as CalendarIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 import { Calendar } from '@/components/ui/calendar'
 import {
   Popover,
@@ -49,10 +48,6 @@ export function FlightSearchForm({ onSearch }: FlightSearchFormProps) {
     to: undefined,
   })
   const [passengerCount, setPassengerCount] = useState('1')
-  // Default: select all airlines
-  const [selectedAirlines, setSelectedAirlines] = useState<string[]>(
-    THAI_AIRLINES.map(a => a.value)
-  )
 
   // Handle trip type change
   const handleTripTypeChange = (type: 'one-way' | 'round-trip') => {
@@ -151,7 +146,7 @@ export function FlightSearchForm({ onSearch }: FlightSearchFormProps) {
       destination,
       destinationName: destinationData?.label || '',
       durationRange: { min, max },
-      selectedAirlines: selectedAirlines.length > 0 ? selectedAirlines : THAI_AIRLINES.map(a => a.value),
+      selectedAirlines: [], // Default: ไม่เลือกสายการบิน (แสดงทั้งหมด)
       startDate,
       endDate,
     }
@@ -173,22 +168,6 @@ export function FlightSearchForm({ onSearch }: FlightSearchFormProps) {
       }
       localStorage.setItem('flightStats', JSON.stringify(stats))
     }
-  }
-
-  const toggleSelectedAirline = (airline: string) => {
-    setSelectedAirlines(prev => 
-      prev.includes(airline) 
-        ? prev.filter(a => a !== airline)
-        : [...prev, airline]
-    )
-  }
-
-  const selectAllAirlines = () => {
-    setSelectedAirlines(THAI_AIRLINES.map(a => a.value))
-  }
-
-  const deselectAllAirlines = () => {
-    setSelectedAirlines([])
   }
 
   return (
@@ -386,70 +365,6 @@ export function FlightSearchForm({ onSearch }: FlightSearchFormProps) {
         </div>
       </div>
 
-      {/* Airline Selection Section */}
-      <div className="mt-4 pt-4 border-t">
-        <div className="flex items-center justify-between mb-2">
-          <Label className="text-sm font-medium block">
-            {'เลือกสายการบิน (คลิกเพื่อเลือก/ยกเลิก)'}
-          </Label>
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={selectAllAirlines}
-              className="h-7 text-xs"
-            >
-              {'เลือกทั้งหมด'}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={deselectAllAirlines}
-              className="h-7 text-xs"
-            >
-              {'ยกเลิกทั้งหมด'}
-            </Button>
-          </div>
-        </div>
-        <p className="text-xs text-muted-foreground mb-3">
-          {'💡 คลิกที่สายการบินที่คุณต้องการให้แสดงในผลการค้นหา (เลือกทั้งหมดเป็นค่าเริ่มต้น)'}
-        </p>
-        <div className="flex flex-wrap gap-2 w-full">
-          {THAI_AIRLINES.map((airline) => {
-            const isSelected = selectedAirlines.includes(airline.value)
-            return (
-              <Badge
-                key={airline.value}
-                variant={isSelected ? "default" : "outline"}
-                className={`cursor-pointer transition-colors flex-shrink-0 ${
-                  isSelected 
-                    ? "bg-primary text-primary-foreground hover:bg-primary/90" 
-                    : "hover:bg-secondary opacity-50"
-                }`}
-                onClick={() => toggleSelectedAirline(airline.value)}
-              >
-                {airline.label}
-                {isSelected && (
-                  <X className="w-3 h-3 ml-1" />
-                )}
-              </Badge>
-            )
-          })}
-        </div>
-        {selectedAirlines.length === 0 && (
-          <div className="mt-3 p-2 bg-destructive/10 border border-destructive/20 rounded-md">
-            <p className="text-xs font-medium text-destructive mb-1">
-              {'⚠️ กรุณาเลือกสายการบินอย่างน้อย 1 สายการบิน'}
-            </p>
-          </div>
-        )}
-      </div>
-
-      <div className="text-sm text-muted-foreground text-center mt-4">
-        {'💡 เคล็ดลับ: ระบุข้อมูลให้ครบเพื่อรับคำแนะนำที่แม่นยำที่สุด'}
-      </div>
     </Card>
   )
 }

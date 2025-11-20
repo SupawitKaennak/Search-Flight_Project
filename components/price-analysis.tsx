@@ -3,12 +3,12 @@
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { TrendingDown, TrendingUp, Calendar, ArrowRight, ArrowLeft } from 'lucide-react'
-import { PriceChart } from '@/components/price-chart'
 import { SeasonalBreakdown } from '@/components/seasonal-breakdown'
 import { AirlineFlights } from '@/components/airline-flights'
 import { FlightSearchParams } from '@/components/flight-search-form'
 import { analyzeFlightPrices, FlightAnalysisResult } from '@/lib/flight-analysis'
 import { savePriceStat } from '@/lib/stats'
+import { THAI_AIRLINES } from '@/services/constants'
 import { useState, useEffect } from 'react'
 
 interface PriceAnalysisProps {
@@ -17,34 +17,46 @@ interface PriceAnalysisProps {
 
 export function PriceAnalysis({ searchParams }: PriceAnalysisProps) {
   const [analysis, setAnalysis] = useState<FlightAnalysisResult | null>(null)
+  const [selectedAirlines, setSelectedAirlines] = useState<string[]>([])
+
+  // ไม่ต้อง update selectedAirlines จาก searchParams เพราะเราต้องการให้ user เลือกเอง
 
   useEffect(() => {
     if (searchParams) {
-      const result = analyzeFlightPrices(
-        searchParams.origin,
-        searchParams.destination,
-        searchParams.durationRange,
-        searchParams.selectedAirlines,
-        searchParams.startDate,
-        searchParams.endDate
-      )
-      setAnalysis(result)
+      // ถ้าไม่เลือกเลย ให้ใช้ทั้งหมด, ถ้าเลือกแล้วให้ใช้เฉพาะที่เลือก
+      const airlinesToAnalyze = selectedAirlines.length === 0
+        ? THAI_AIRLINES.map(a => a.value)
+        : selectedAirlines
       
-      // Save price statistics for future trend analysis
-      savePriceStat({
-        origin: searchParams.origin,
-        destination: searchParams.destination,
-        originName: searchParams.originName,
-        destinationName: searchParams.destinationName,
-        recommendedPrice: result.recommendedPeriod.price,
-        season: result.recommendedPeriod.season,
-        airline: result.recommendedPeriod.airline,
-        timestamp: new Date().toISOString(),
-      })
+      if (airlinesToAnalyze.length > 0) {
+        const result = analyzeFlightPrices(
+          searchParams.origin,
+          searchParams.destination,
+          searchParams.durationRange,
+          airlinesToAnalyze,
+          searchParams.startDate,
+          searchParams.endDate
+        )
+          setAnalysis(result)
+        
+        // Save price statistics for future trend analysis
+        savePriceStat({
+          origin: searchParams.origin,
+          destination: searchParams.destination,
+          originName: searchParams.originName,
+          destinationName: searchParams.destinationName,
+          recommendedPrice: result.recommendedPeriod.price,
+          season: result.recommendedPeriod.season,
+          airline: result.recommendedPeriod.airline,
+          timestamp: new Date().toISOString(),
+        })
+      } else {
+        setAnalysis(null)
+      }
     } else {
       setAnalysis(null)
     }
-  }, [searchParams])
+  }, [searchParams, selectedAirlines])
 
   if (!searchParams || !analysis) {
     return (
@@ -74,10 +86,10 @@ export function PriceAnalysis({ searchParams }: PriceAnalysisProps) {
         </h2>
         <p className="text-muted-foreground">
           {'สำหรับการเดินทาง '}{searchParams.durationRange.min}{'-'}{searchParams.durationRange.max}{' วัน'}
-          {searchParams.selectedAirlines.length > 0 && (
+          {selectedAirlines.length > 0 && (
             <span className="ml-2">
               {' (สายการบิน: '}
-              {searchParams.selectedAirlines.length}{' สายการบิน)'}
+              {selectedAirlines.length}{' สายการบิน)'}
             </span>
           )}
         </p>
@@ -92,7 +104,7 @@ export function PriceAnalysis({ searchParams }: PriceAnalysisProps) {
       </div>
 
       {/* Price Comparison - If Go Before/After */}
-      <div className="grid md:grid-cols-2 gap-4 mb-8">
+      <div className="w-full max-w-6xl mx-auto grid md:grid-cols-2 gap-4 mb-8">
         <Card className="p-6 border-2 border-orange-200 bg-orange-50/50">
           <div className="flex items-center gap-3 mb-4">
             <ArrowLeft className="w-5 h-5 text-orange-600" />
@@ -134,29 +146,12 @@ export function PriceAnalysis({ searchParams }: PriceAnalysisProps) {
         </Card>
       </div>
 
-      {/* Price Trend Chart */}
-      <Card className="!px-4 !py-4 !pb-16 mb-12 overflow-visible max-w-5xl mx-auto">
-        <h3 className="text-xl font-bold mb-4">{'กราฟแนวโน้มราคา (ไป-กลับ)'}</h3>
-        <p className="text-sm text-muted-foreground mb-4">
-          {'แกน X แสดงวันที่เริ่มเดินทาง (ช่วงไป) - วันกลับ (ช่วงกลับ) คำนวณตามช่วงวันที่ที่เลือก'}
-          {searchParams.startDate && searchParams.endDate && (
-            <span className="block mt-1 text-xs">
-              {'ช่วงไป: '}
-              {searchParams.startDate.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })}
-              {' - ช่วงกลับ: '}
-              {searchParams.endDate.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })}
-            </span>
-          )}
-        </p>
-        <div className="w-full overflow-x-auto">
-          <PriceChart data={analysis.priceChartData} />
-        </div>
-      </Card>
 
       {/* Airline Flights */}
       <AirlineFlights 
         searchParams={searchParams} 
-        selectedAirlines={searchParams.selectedAirlines}
+        selectedAirlines={selectedAirlines}
+        onAirlinesChange={setSelectedAirlines}
       />
     </div>
   )
