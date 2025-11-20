@@ -80,6 +80,20 @@ export function FlightSearchForm({ onSearch }: FlightSearchFormProps) {
   }
 
   const handleDateRangeSelect = (range: DateRange | undefined) => {
+    // ถ้าเลือกวันเดียวกัน ให้ clear to date
+    if (range?.from && range?.to) {
+      const fromDate = new Date(range.from)
+      const toDate = new Date(range.to)
+      fromDate.setHours(0, 0, 0, 0)
+      toDate.setHours(0, 0, 0, 0)
+      
+      // ถ้าวันเดียวกัน ให้ clear to date
+      if (fromDate.getTime() === toDate.getTime()) {
+        setDateRange({ from: range.from, to: undefined })
+        return
+      }
+    }
+    
     setDateRange(range)
     if (range?.from) {
       setTripType('round-trip')
@@ -96,7 +110,7 @@ export function FlightSearchForm({ onSearch }: FlightSearchFormProps) {
     // ต้องมี destination และต้องมีวันที่ตาม trip type ที่เลือก
     if (!destination) return
     if (tripType === 'one-way' && !departureDate) return
-    if (tripType === 'round-trip' && !dateRange?.from) return
+    if (tripType === 'round-trip' && (!dateRange?.from || !dateRange?.to)) return
     // ถ้ายังไม่เลือก trip type แต่มีวันที่ ให้ auto-detect
     if (!tripType) {
       if (departureDate) {
@@ -117,20 +131,14 @@ export function FlightSearchForm({ onSearch }: FlightSearchFormProps) {
     let startDate: Date | undefined
     let endDate: Date | undefined
 
-    if (tripType === 'round-trip' && dateRange?.from) {
-      // ใช้ข้อมูลไป-กลับ
+    if (tripType === 'round-trip' && dateRange?.from && dateRange?.to) {
+      // ใช้ข้อมูลไป-กลับ (ต้องมีทั้ง from และ to)
       startDate = dateRange.from
-      if (dateRange.to) {
-        // มีทั้ง from และ to
-        const diffTime = Math.abs(dateRange.to.getTime() - dateRange.from.getTime())
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-        min = Math.max(3, diffDays - 2)
-        max = diffDays + 2
-        endDate = dateRange.to
-      } else {
-        // มีแค่ from ยังไม่มี to (default 3-5 วัน)
-        endDate = undefined
-      }
+      const diffTime = Math.abs(dateRange.to.getTime() - dateRange.from.getTime())
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+      min = Math.max(3, diffDays - 2)
+      max = diffDays + 2
+      endDate = dateRange.to
     } else if (tripType === 'one-way' && departureDate) {
       // ใช้ข้อมูลไปอย่างเดียว (default 3-5 วัน)
       startDate = departureDate
@@ -330,14 +338,47 @@ export function FlightSearchForm({ onSearch }: FlightSearchFormProps) {
           <Button 
             onClick={handleSearch} 
             className="w-80 h-10 px-8"
-            disabled={
-              !origin || 
-              !destination || 
-              !passengerCount ||
-              (tripType === 'one-way' && !departureDate) ||
-              (tripType === 'round-trip' && !dateRange?.from) ||
-              (tripType === null && !departureDate && !dateRange?.from)
-            }
+            disabled={(() => {
+              // ตรวจสอบเงื่อนไขพื้นฐาน
+              if (!destination || !passengerCount) return true
+              
+              // ตรวจสอบวันที่ตาม trip type
+              if (tripType === 'one-way') {
+                return !departureDate
+              }
+              
+              if (tripType === 'round-trip') {
+                // ต้องมีทั้ง from และ to - ตรวจสอบอย่างชัดเจน
+                if (!dateRange?.from || dateRange.to === undefined || dateRange.to === null) {
+                  return true
+                }
+                // ตรวจสอบว่าวันเดียวกันหรือไม่
+                if (dateRange.from && dateRange.to) {
+                  const fromDate = new Date(dateRange.from)
+                  const toDate = new Date(dateRange.to)
+                  fromDate.setHours(0, 0, 0, 0)
+                  toDate.setHours(0, 0, 0, 0)
+                  if (fromDate.getTime() === toDate.getTime()) {
+                    return true // disable ถ้าวันเดียวกัน
+                  }
+                }
+                return false
+              }
+              
+              // ถ้ายังไม่เลือก trip type
+              if (tripType === null) {
+                // ถ้ามี departureDate (one-way) ก็ใช้ได้
+                if (departureDate) return false
+                // ถ้ามี dateRange ต้องมีทั้ง from และ to
+                if (dateRange?.from) {
+                  return !dateRange.to
+                }
+                // ไม่มีวันที่เลย
+                return true
+              }
+              
+              return false
+            })()}
           >
             <Search className="w-8 h-4 mr-2" />
             {'ค้นหา'}
