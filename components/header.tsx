@@ -12,7 +12,7 @@ export function Header() {
           <span className="text-xl font-bold text-foreground">Search Flight Project</span>
         </div>
         
-        <nav className="hidden md:flex items-center gap-6">
+        <nav className="hidden md:flex items-center gap-6 absolute left-1/2 transform -translate-x-1/2">
           <a href="#search" className="text-sm font-medium hover:text-primary transition-colors">
             {'ค้นหา'}
           </a>

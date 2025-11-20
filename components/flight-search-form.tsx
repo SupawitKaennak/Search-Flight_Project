@@ -48,6 +48,7 @@ export function FlightSearchForm({ onSearch }: FlightSearchFormProps) {
     from: undefined,
     to: undefined,
   })
+  const [passengerCount, setPassengerCount] = useState('1')
   // Default: select all airlines
   const [selectedAirlines, setSelectedAirlines] = useState<string[]>(
     THAI_AIRLINES.map(a => a.value)
@@ -184,7 +185,7 @@ export function FlightSearchForm({ onSearch }: FlightSearchFormProps) {
 
   return (
     <Card className="p-8 bg-background/60  shadow-xl max-w-6xl mx-auto">
-      <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
+      <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4 items-end">
         <div className="space-y-2">
           <Label htmlFor="origin">{'จังหวัดต้นทาง'}</Label>
           <Select value={origin} onValueChange={setOrigin}>
@@ -270,7 +271,7 @@ export function FlightSearchForm({ onSearch }: FlightSearchFormProps) {
                     handleTripTypeChange('round-trip')
                   }
                 }}
-                className={`w-full bg-white border-gray-300 justify-start text-left font-normal text-sm overflow-hidden ${
+                className={`w-full bg-white border-gray-300 justify-start text-left font-normal text-sm overflow-hidden min-w-[200px] ${
                   tripType === 'one-way' ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
               >
@@ -306,17 +307,39 @@ export function FlightSearchForm({ onSearch }: FlightSearchFormProps) {
           </Popover>
         </div>
 
-        <div className="space-y-2 flex flex-col justify-end">
+        <div className="space-y-2">
+          <Label htmlFor="passengers">{'จำนวนผู้โดยสาร'}</Label>
+          <Select value={passengerCount} onValueChange={setPassengerCount}>
+            <SelectTrigger id="passengers" className="bg-white border-gray-300 w-full min-w-[200px]">
+              <SelectValue placeholder="เลือกจำนวน" />
+            </SelectTrigger>
+            <SelectContent>
+              {Array.from({ length: 9 }, (_, i) => i + 1).map((num) => (
+                <SelectItem key={num} value={num.toString()}>
+                  {num} {num === 1 ? 'คน' : 'คน'}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Search Button Section */}
+      <div className="mt-4 pt-4 border-t">
+        <div className="flex items-center justify-center">
           <Button 
             onClick={handleSearch} 
-            className="w-full h-10"
+            className="w-80 h-10 px-8"
             disabled={
+              !origin || 
               !destination || 
+              !passengerCount ||
               (tripType === 'one-way' && !departureDate) ||
-              (tripType === 'round-trip' && !dateRange?.from)
+              (tripType === 'round-trip' && !dateRange?.from) ||
+              (tripType === null && !departureDate && !dateRange?.from)
             }
           >
-            <Search className="w-4 h-4 mr-2" />
+            <Search className="w-8 h-4 mr-2" />
             {'ค้นหา'}
           </Button>
         </div>
