@@ -26,13 +26,27 @@ export default function HomePage() {
       <Header />
       
       {/* Hero Section with Search Form */}
-      <section id="search" className="relative bg-primary py-16">
-        <div className="container mx-auto px-4">
+      <section id="search" className="relative py-16 overflow-hidden">
+        {/* Background Image */}
+        <div 
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `url('/planeimg.jpg')`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+          }}
+        ></div>
+        
+        {/* Overlay for better text readability - ลด opacity เพื่อให้เห็นรูปภาพมากขึ้น */}
+        <div className="absolute inset-0 bg-primary/30 backdrop-blur-[2px]"></div>
+        
+        <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-4xl mx-auto text-center mb-8">
-            <h1 className="text-4xl md:text-5xl font-bold text-primary-foreground mb-4 text-balance">
+            <h1 className="text-4xl md:text-5xl font-bold text-primary-foreground mb-4 text-balance drop-shadow-lg">
               {'ค้นหาช่วงเวลาที่ดีที่สุดในการเดินทาง'}
             </h1>
-            <p className="text-lg text-primary-foreground/90 text-pretty">
+            <p className="text-lg text-primary-foreground/90 text-pretty drop-shadow-md">
               {'วิเคราะห์ราคาตั๋วเครื่องบินตามฤดูกาล แนะนำช่วงที่ถูกที่สุดให้คุณ'}
             </p>
           </div>

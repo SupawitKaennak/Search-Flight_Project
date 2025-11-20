@@ -42,6 +42,8 @@ interface FlightSearchFormProps {
 export function FlightSearchForm({ onSearch }: FlightSearchFormProps) {
   const [origin, setOrigin] = useState('bangkok')
   const [destination, setDestination] = useState('')
+  const [tripType, setTripType] = useState<'one-way' | 'round-trip' | null>(null) // null = ยังไม่เลือก, 'one-way' หรือ 'round-trip'
+  const [departureDate, setDepartureDate] = useState<Date | undefined>(undefined)
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: undefined,
     to: undefined,
@@ -51,19 +53,88 @@ export function FlightSearchForm({ onSearch }: FlightSearchFormProps) {
     THAI_AIRLINES.map(a => a.value)
   )
 
+  // Handle trip type change
+  const handleTripTypeChange = (type: 'one-way' | 'round-trip') => {
+    setTripType(type)
+    // Clear the other type's data when switching
+    if (type === 'one-way') {
+      setDateRange({ from: undefined, to: undefined })
+    } else {
+      setDepartureDate(undefined)
+    }
+  }
+
+  // Auto-detect trip type when user selects a date
+  const handleDepartureDateSelect = (date: Date | undefined) => {
+    setDepartureDate(date)
+    if (date) {
+      setTripType('one-way')
+      setDateRange({ from: undefined, to: undefined })
+    } else {
+      // ถ้าล้างข้อมูล ให้ enable ทั้งสองฟิลด์
+      if (!dateRange?.from) {
+        setTripType(null)
+      }
+    }
+  }
+
+  const handleDateRangeSelect = (range: DateRange | undefined) => {
+    setDateRange(range)
+    if (range?.from) {
+      setTripType('round-trip')
+      setDepartureDate(undefined)
+    } else {
+      // ถ้าล้างข้อมูล ให้ enable ทั้งสองฟิลด์
+      if (!departureDate) {
+        setTripType(null)
+      }
+    }
+  }
+
   const handleSearch = () => {
-    if (!destination || !dateRange?.from || !dateRange?.to) return
+    // ต้องมี destination และต้องมีวันที่ตาม trip type ที่เลือก
+    if (!destination) return
+    if (tripType === 'one-way' && !departureDate) return
+    if (tripType === 'round-trip' && !dateRange?.from) return
+    // ถ้ายังไม่เลือก trip type แต่มีวันที่ ให้ auto-detect
+    if (!tripType) {
+      if (departureDate) {
+        setTripType('one-way')
+      } else if (dateRange?.from) {
+        setTripType('round-trip')
+      } else {
+        return
+      }
+    }
     
     const originData = PROVINCES.find(c => c.value === origin) || { value: 'bangkok', label: 'กรุงเทพมหานคร' }
     const destinationData = PROVINCES.find(c => c.value === destination)
     
     // Calculate duration in days
-    const diffTime = Math.abs(dateRange.to.getTime() - dateRange.from.getTime())
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-    
-    // Use a range around the calculated duration (e.g., if 7 days, use 5-9 range)
-    const min = Math.max(3, diffDays - 2)
-    const max = diffDays + 2
+    let min = 3
+    let max = 5
+    let startDate: Date | undefined
+    let endDate: Date | undefined
+
+    if (tripType === 'round-trip' && dateRange?.from) {
+      // ใช้ข้อมูลไป-กลับ
+      startDate = dateRange.from
+      if (dateRange.to) {
+        // มีทั้ง from และ to
+        const diffTime = Math.abs(dateRange.to.getTime() - dateRange.from.getTime())
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+        min = Math.max(3, diffDays - 2)
+        max = diffDays + 2
+        endDate = dateRange.to
+      } else {
+        // มีแค่ from ยังไม่มี to (default 3-5 วัน)
+        endDate = undefined
+      }
+    } else if (tripType === 'one-way' && departureDate) {
+      // ใช้ข้อมูลไปอย่างเดียว (default 3-5 วัน)
+      startDate = departureDate
+      endDate = undefined
+    }
     
     const searchParams: FlightSearchParams = {
       origin: origin || 'bangkok',
@@ -72,8 +143,8 @@ export function FlightSearchForm({ onSearch }: FlightSearchFormProps) {
       destinationName: destinationData?.label || '',
       durationRange: { min, max },
       selectedAirlines: selectedAirlines.length > 0 ? selectedAirlines : THAI_AIRLINES.map(a => a.value),
-      startDate: dateRange.from,
-      endDate: dateRange.to,
+      startDate,
+      endDate,
     }
     
     onSearch?.(searchParams)
@@ -112,12 +183,12 @@ export function FlightSearchForm({ onSearch }: FlightSearchFormProps) {
   }
 
   return (
-    <Card className="p-6 bg-background shadow-xl max-w-4xl mx-auto">
+    <Card className="p-8 bg-background/60  shadow-xl max-w-6xl mx-auto">
       <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
         <div className="space-y-2">
           <Label htmlFor="origin">{'จังหวัดต้นทาง'}</Label>
           <Select value={origin} onValueChange={setOrigin}>
-            <SelectTrigger id="origin">
+            <SelectTrigger id="origin" className="bg-white border-gray-300 w-full min-w-[200px]">
               <SelectValue placeholder="เลือกจังหวัด" />
             </SelectTrigger>
             <SelectContent>
@@ -133,7 +204,7 @@ export function FlightSearchForm({ onSearch }: FlightSearchFormProps) {
         <div className="space-y-2">
           <Label htmlFor="destination">{'จังหวัดปลายทาง'}</Label>
           <Select value={destination} onValueChange={setDestination}>
-            <SelectTrigger id="destination">
+            <SelectTrigger id="destination" className="bg-white border-gray-300 w-full min-w-[200px]">
               <SelectValue placeholder="เลือกจังหวัด" />
             </SelectTrigger>
             <SelectContent>
@@ -147,13 +218,61 @@ export function FlightSearchForm({ onSearch }: FlightSearchFormProps) {
         </div>
 
         <div className="space-y-2">
+          <Label htmlFor="departure-date">{'เลือกวันที่ไป(เที่ยวเดียว)'}</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                id="departure-date"
+                variant="outline"
+                disabled={tripType === 'round-trip'}
+                onClick={() => {
+                  if (tripType === 'round-trip') {
+                    handleTripTypeChange('one-way')
+                  }
+                }}
+                className={`w-full bg-white border-gray-300 justify-start text-left font-normal text-sm overflow-hidden ${
+                  tripType === 'round-trip' ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
+                <span className="truncate">
+                  {departureDate ? (
+                    format(departureDate, 'dd/MM/yyyy')
+                  ) : (
+                    <span className="text-muted-foreground">{'เลือกวันที่ไป'}</span>
+                  )}
+                </span>
+              </Button>
+            </PopoverTrigger>
+            {tripType !== 'round-trip' && (
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={departureDate}
+                  onSelect={handleDepartureDateSelect}
+                  disabled={(date) => date < new Date()}
+                />
+              </PopoverContent>
+            )}
+          </Popover>
+        </div>
+
+        <div className="space-y-2">
           <Label htmlFor="date-range">{'เลือกวันที่ไป-กลับ'}</Label>
           <Popover>
             <PopoverTrigger asChild>
               <Button
                 id="date-range"
                 variant="outline"
-                className="w-full justify-start text-left font-normal text-sm overflow-hidden"
+                disabled={tripType === 'one-way'}
+                onClick={() => {
+                  if (tripType === 'one-way') {
+                    handleTripTypeChange('round-trip')
+                  }
+                }}
+                className={`w-full bg-white border-gray-300 justify-start text-left font-normal text-sm overflow-hidden ${
+                  tripType === 'one-way' ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
               >
                 <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
                 <span className="truncate">
@@ -172,24 +291,30 @@ export function FlightSearchForm({ onSearch }: FlightSearchFormProps) {
                 </span>
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="range"
-                defaultMonth={dateRange?.from}
-                selected={dateRange}
-                onSelect={setDateRange}
-                numberOfMonths={2}
-                disabled={(date) => date < new Date()}
-              />
-            </PopoverContent>
+            {tripType !== 'one-way' && (
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="range"
+                  defaultMonth={dateRange?.from}
+                  selected={dateRange}
+                  onSelect={handleDateRangeSelect}
+                  numberOfMonths={2}
+                  disabled={(date) => date < new Date()}
+                />
+              </PopoverContent>
+            )}
           </Popover>
         </div>
 
-        <div className="space-y-2 flex flex-col justify-end lg:col-span-2">
+        <div className="space-y-2 flex flex-col justify-end">
           <Button 
             onClick={handleSearch} 
             className="w-full h-10"
-            disabled={!destination || !dateRange?.from || !dateRange?.to}
+            disabled={
+              !destination || 
+              (tripType === 'one-way' && !departureDate) ||
+              (tripType === 'round-trip' && !dateRange?.from)
+            }
           >
             <Search className="w-4 h-4 mr-2" />
             {'ค้นหา'}
@@ -227,14 +352,14 @@ export function FlightSearchForm({ onSearch }: FlightSearchFormProps) {
         <p className="text-xs text-muted-foreground mb-3">
           {'💡 คลิกที่สายการบินที่คุณต้องการให้แสดงในผลการค้นหา (เลือกทั้งหมดเป็นค่าเริ่มต้น)'}
         </p>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 w-full">
           {THAI_AIRLINES.map((airline) => {
             const isSelected = selectedAirlines.includes(airline.value)
             return (
               <Badge
                 key={airline.value}
                 variant={isSelected ? "default" : "outline"}
-                className={`cursor-pointer transition-colors ${
+                className={`cursor-pointer transition-colors flex-shrink-0 ${
                   isSelected 
                     ? "bg-primary text-primary-foreground hover:bg-primary/90" 
                     : "hover:bg-secondary opacity-50"

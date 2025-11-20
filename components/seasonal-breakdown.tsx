@@ -5,8 +5,10 @@ import { Badge } from '@/components/ui/badge'
 import { TrendingDown, Info, AlertCircle, TrendingUp } from 'lucide-react'
 import { SeasonData } from '@/lib/flight-analysis'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { defaultSeasons } from '@/services/mock-seasons'
 import { thaiMonths, thaiMonthsFull } from '@/services/constants'
+import { useState } from 'react'
 
 interface RecommendedPeriod {
   startDate: string
@@ -25,6 +27,8 @@ interface SeasonalBreakdownProps {
 
 export function SeasonalBreakdown({ seasons: propSeasons, recommendedPeriod }: SeasonalBreakdownProps) {
   const seasons = propSeasons || defaultSeasons
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
+  const [isHovering, setIsHovering] = useState(false)
 
   // Get current month
   const currentMonth = new Date().getMonth()
@@ -108,7 +112,7 @@ export function SeasonalBreakdown({ seasons: propSeasons, recommendedPeriod }: S
   const RecIcon = recConfig.icon
 
   return (
-    <div>
+    <div className="w-full max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-2xl font-bold">{'การแบ่งช่วงตามฤดูกาล'}</h3>
         <Tooltip>
@@ -134,17 +138,46 @@ export function SeasonalBreakdown({ seasons: propSeasons, recommendedPeriod }: S
       </div>
 
       {/* Best Deal Recommendation */}
-      {recommendedPeriod && (
-        <Card className={`p-6 mb-6 border-2 ${recConfig.borderColor} ${recConfig.bgColor}`}>
-          <div className="flex items-start gap-4">
-            <div className={`w-12 h-12 ${recConfig.iconBg} rounded-full flex items-center justify-center shrink-0`}>
-              <RecIcon className={`w-6 h-6 ${recConfig.iconColor}`} />
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                <h3 className="text-xl font-bold">{'คำแนะนำของเรา'}</h3>
-                <Badge className={recConfig.badgeBg}>{recConfig.badgeText}</Badge>
-              </div>
+      {recommendedPeriod && (() => {
+        const currentSeasonData = seasons.find(s => s.type === currentSeason)
+        const otherSeasons = seasons.filter(s => s.type !== currentSeason)
+        const currentPrice = recommendedPeriod.price
+        
+        // Calculate comparison with other seasons
+        const seasonComparisons = otherSeasons.map(season => {
+          const seasonPrice = season.bestDeal.price
+          const difference = seasonPrice - currentPrice
+          const percentage = Math.round((difference / currentPrice) * 100)
+          return {
+            type: season.type,
+            name: season.type === 'low' ? 'Low Season' : season.type === 'normal' ? 'Normal Season' : 'High Season',
+            price: seasonPrice,
+            priceRange: season.priceRange,
+            difference,
+            percentage,
+            months: season.months.join(', '),
+          }
+        })
+
+        return (
+          <div
+            onMouseMove={(e) => {
+              setMousePosition({ x: e.clientX, y: e.clientY })
+            }}
+            onMouseEnter={() => setIsHovering(true)}
+            onMouseLeave={() => setIsHovering(false)}
+            className="relative"
+          >
+            <Card className={`p-8 mb-6 border-2 ${recConfig.borderColor} ${recConfig.bgColor} cursor-help`}>
+              <div className="flex items-start gap-6">
+                <div className={`w-14 h-14 ${recConfig.iconBg} rounded-full flex items-center justify-center shrink-0`}>
+                  <RecIcon className={`w-7 h-7 ${recConfig.iconColor}`} />
+                </div>
+                <div className="flex-1 w-full">
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="text-xl font-bold">{'คำแนะนำของเรา'}</h3>
+                    <Badge className={recConfig.badgeBg}>{recConfig.badgeText}</Badge>
+                  </div>
               
               {currentSeason === 'low' ? (
                 <>
@@ -157,7 +190,7 @@ export function SeasonalBreakdown({ seasons: propSeasons, recommendedPeriod }: S
                      recommendedPeriod.season === 'normal' ? 'Normal Season' : 'High Season'}
                     {')'}
                   </p>
-                  <div className="grid md:grid-cols-3 gap-4">
+                  <div className="grid md:grid-cols-3 lg:grid-cols-4 gap-6">
                     <div>
                       <div className="text-sm text-muted-foreground mb-1">{'ราคาไป-กลับ'}</div>
                       <div className={`text-2xl font-bold ${recConfig.priceColor}`}>
@@ -183,33 +216,107 @@ export function SeasonalBreakdown({ seasons: propSeasons, recommendedPeriod }: S
                       ? 'ตอนนี้อยู่ในช่วง High Season ราคาตั๋วเครื่องบินสูงสุด แนะนำให้จองในช่วง Low Season เพื่อประหยัดค่าใช้จ่าย'
                       : 'ตอนนี้อยู่ในช่วง Normal Season แนะนำให้จองในช่วง Low Season เพื่อประหยัดค่าใช้จ่ายมากขึ้น'}
                   </p>
-                  <div className="p-4 bg-background rounded-lg border">
-                    <div className="text-sm text-muted-foreground mb-2">{'แนะนำจองในช่วง Low Season'}</div>
-                    <div className="text-lg font-semibold text-green-600">{lowSeasonMonths}</div>
-                    {lowSeasonData && (
-                      <div className="text-sm text-muted-foreground mt-2">
-                        {'ราคา: ฿'}{lowSeasonData.priceRange.min.toLocaleString()}
-                        {' - ฿'}{lowSeasonData.priceRange.max.toLocaleString()}
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="p-5 bg-background rounded-lg border">
+                      <div className="text-sm text-muted-foreground mb-2">{'แนะนำจองในช่วง Low Season'}</div>
+                      <div className="text-lg font-semibold text-green-600">{lowSeasonMonths}</div>
+                      {lowSeasonData && (
+                        <div className="text-sm text-muted-foreground mt-2">
+                          {'ราคา: ฿'}{lowSeasonData.priceRange.min.toLocaleString()}
+                          {' - ฿'}{lowSeasonData.priceRange.max.toLocaleString()}
+                        </div>
+                      )}
+                    </div>
+                    {currentSeason === 'high' && recommendedPeriod && (
+                      <div className="p-5 bg-background rounded-lg border">
+                        <div className="text-sm text-muted-foreground mb-2">{'ราคาปัจจุบัน (High Season)'}</div>
+                        <div className={`text-2xl font-bold ${recConfig.priceColor}`}>
+                          {'฿'}{recommendedPeriod.price.toLocaleString()}
+                        </div>
                       </div>
                     )}
                   </div>
-                  {currentSeason === 'high' && recommendedPeriod && (
-                    <div className="mt-4 pt-4 border-t">
-                      <div className="text-sm text-muted-foreground mb-2">{'ราคาปัจจุบัน (High Season)'}</div>
-                      <div className={`text-2xl font-bold ${recConfig.priceColor}`}>
-                        {'฿'}{recommendedPeriod.price.toLocaleString()}
-                      </div>
-                    </div>
-                  )}
                 </>
               )}
             </div>
           </div>
         </Card>
-      )}
+        
+        {/* Floating comparison tooltip that follows mouse */}
+        {isHovering && (
+          <div
+            className="fixed z-50 max-w-md p-4 bg-popover text-popover-foreground rounded-lg border shadow-lg pointer-events-none"
+            style={{
+              left: `${mousePosition.x + 15}px`,
+              top: `${mousePosition.y + 15}px`,
+              transform: 'translate(0, 0)',
+            }}
+          >
+            <div className="space-y-4">
+              <div>
+                <div className="font-semibold mb-2 text-sm">
+                  {'เปรียบเทียบกับ Season อื่นๆ'}
+                </div>
+                <div className="space-y-3">
+                  {/* Current Season */}
+                  <div className="p-2 bg-background rounded border">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-medium">
+                        {currentSeason === 'low' ? 'Low Season' : 
+                         currentSeason === 'normal' ? 'Normal Season' : 'High Season'}
+                        {' (ปัจจุบัน)'}
+                      </span>
+                      <div className={`text-sm font-bold ${recConfig.priceColor}`}>
+                        {'฿'}{currentPrice.toLocaleString()}
+                      </div>
+                    </div>
+                    {currentSeasonData && (
+                      <div className="text-xs text-muted-foreground">
+                        {'ช่วง: '}{currentSeasonData.months.join(', ')}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Other Seasons */}
+                  {seasonComparisons.map((comp) => {
+                    const isCheaper = comp.difference < 0
+                    const compColor = comp.type === 'low' ? 'text-green-600' : 
+                                     comp.type === 'normal' ? 'text-blue-600' : 'text-red-600'
+                    
+                    return (
+                      <div key={comp.type} className="p-2 bg-background rounded border">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-sm font-medium">{comp.name}</span>
+                          <div className={`text-sm font-bold ${compColor}`}>
+                            {'฿'}{comp.price.toLocaleString()}
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground">
+                            {'ช่วง: '}{comp.months}
+                          </span>
+                          <span className={isCheaper ? 'text-green-600' : 'text-red-600'}>
+                            {isCheaper ? 'ถูกกว่า' : 'แพงกว่า'} {Math.abs(comp.percentage)}%
+                          </span>
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {'ราคา: ฿'}{comp.priceRange.min.toLocaleString()}
+                          {' - ฿'}{comp.priceRange.max.toLocaleString()}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+        )
+      })()}
 
       {/* Timeline Bar Chart */}
-      <Card className="p-6">
+      <Card className="p-8">
         <div className="mb-4">
           <h4 className="font-semibold mb-2">{'Timeline ฤดูกาลตลอดทั้งปี'}</h4>
           <p className="text-sm text-muted-foreground">
@@ -238,7 +345,8 @@ export function SeasonalBreakdown({ seasons: propSeasons, recommendedPeriod }: S
                           season === 'low' ? '#4ade80, #16a34a' :
                           season === 'normal' ? '#60a5fa, #2563eb' :
                           '#f87171, #dc2626'
-                        })`
+                        })`,
+                        animation: isCurrent ? 'blink 2s ease-in-out infinite' : undefined,
                       }}
                     >
                       {isCurrent && (
