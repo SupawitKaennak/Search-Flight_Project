@@ -32,6 +32,8 @@ export interface FlightSearchParams {
   selectedAirlines: string[]
   startDate?: Date
   endDate?: Date
+  tripType?: 'one-way' | 'round-trip' | null
+  passengerCount?: number
 }
 
 interface FlightSearchFormProps {
@@ -149,6 +151,7 @@ export function FlightSearchForm({ onSearch }: FlightSearchFormProps) {
       selectedAirlines: [], // Default: ไม่เลือกสายการบิน (แสดงทั้งหมด)
       startDate,
       endDate,
+      tripType,
     }
     
     onSearch?.(searchParams)

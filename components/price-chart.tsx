@@ -6,12 +6,12 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/
 import { defaultChartData } from '@/services/mock-chart-data'
 import { monthOrder } from '@/services/constants'
 
-const chartConfig = {
+const getChartConfig = (tripType?: 'one-way' | 'round-trip' | null) => ({
   price: {
-    label: 'ราคาไป-กลับ',
+    label: tripType === 'one-way' ? 'ราคาเที่ยวเดียว' : 'ราคาไป-กลับ',
     color: 'hsl(var(--chart-1))',
   },
-}
+})
 
 interface PriceChartProps {
   data?: Array<{
@@ -19,12 +19,15 @@ interface PriceChartProps {
     returnDate: string
     price: number
     season: 'high' | 'normal' | 'low'
+    duration?: number
   }>
+  tripType?: 'one-way' | 'round-trip' | null
 }
 
-export function PriceChart({ data }: PriceChartProps) {
+export function PriceChart({ data, tripType }: PriceChartProps) {
   // Fallback to mock data if no data provided
   const chartData = data || defaultChartData
+  const chartConfig = getChartConfig(tripType)
 
   const lowestPrice = Math.min(...chartData.map(d => d.price))
   
@@ -37,6 +40,7 @@ export function PriceChart({ data }: PriceChartProps) {
       price: d.price,
       season: d.season,
       returnDate: d.returnDate,
+      duration: d.duration || 0,
       // เพิ่ม sortKey สำหรับเรียงลำดับ
       sortKey: (() => {
         const match = d.startDate.match(/(\d+)\s+(.+)/)
@@ -50,10 +54,10 @@ export function PriceChart({ data }: PriceChartProps) {
     }))
     .sort((a, b) => a.sortKey - b.sortKey)
   return (
-    <div className="h-[300px] w-full max-w-full">
+    <div className="min-h-[350px] w-full max-w-full">
       <ChartContainer config={chartConfig}>
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={transformedData} margin={{ top: 0, right: 20, left: 10, bottom: 75 }}>
+          <AreaChart data={transformedData} margin={{ top: 30, right: 40, left: 10, bottom: 80 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
             <XAxis 
               dataKey="date" 
@@ -61,8 +65,9 @@ export function PriceChart({ data }: PriceChartProps) {
               fontSize={11}
               angle={-45}
               textAnchor="end"
-              height={65}
+              height={70}
               interval={0}
+              tick={{ fill: 'hsl(var(--foreground))' }}
             />
             <YAxis 
               stroke="hsl(var(--muted-foreground))"
@@ -75,23 +80,47 @@ export function PriceChart({ data }: PriceChartProps) {
                 formatter={(value: any, name: any, props: any) => {
                   const returnDate = props?.payload?.returnDate || ''
                   const startDate = props?.payload?.date || ''
-                  return [
-                    `฿${Number(value).toLocaleString()}`,
-                    returnDate && startDate 
-                      ? `ช่วงไป: ${startDate} - ช่วงกลับ: ${returnDate}`
-                      : returnDate 
-                        ? `กลับ ${returnDate}`
-                        : 'ราคาไป-กลับ'
-                  ]
+                  const duration = props?.payload?.duration || 0
+                  
+                  if (tripType === 'one-way') {
+                    // One-way: แสดงแค่ราคา (ไม่แสดง label ซ้ำ)
+                    return [
+                      `฿${Number(value).toLocaleString()}`,
+                      'ราคาเที่ยวเดียว'
+                    ]
+                  } else {
+                    // Round-trip: แสดง "ไปวันที่ A - กลับวันที่ B (รวม X วัน)"
+                    if (returnDate && startDate) {
+                      return [
+                        `฿${Number(value).toLocaleString()}`,
+                        `ไปวันที่ ${startDate} - กลับวันที่ ${returnDate}${duration > 0 ? ` (รวม ${duration} วัน)` : ''}`
+                      ]
+                    }
+                    return [
+                      `฿${Number(value).toLocaleString()}`,
+                      returnDate ? `กลับ ${returnDate}` : 'ราคาไป-กลับ'
+                    ]
+                  }
                 }}
-                labelFormatter={(label) => `วันที่เริ่มเดินทาง: ${label}`}
+                labelFormatter={(label) => {
+                  if (tripType === 'one-way') {
+                    return `เดินทางวันที่ ${label}`
+                  }
+                  return `วันที่ออกเดินทาง: ${label}`
+                }}
               />} 
             />
             <ReferenceLine 
               y={lowestPrice} 
               stroke="hsl(var(--accent))" 
               strokeDasharray="3 3"
-              label={{ value: 'ราคาถูกที่สุด', position: 'right', fill: 'hsl(var(--accent))' }}
+              label={{ 
+                value: 'ราคาถูกที่สุด', 
+                position: 'insideTopRight', 
+                fill: 'hsl(var(--accent))',
+                fontSize: 12,
+                fontWeight: 'bold'
+              }}
             />
             <Area 
               type="monotone" 

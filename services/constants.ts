@@ -50,7 +50,6 @@ export const PROVINCES = [
 export const THAI_AIRLINES = [
   { value: 'thai-airways', label: 'Thai Airways' },
   { value: 'thai-airasia', label: 'Thai AirAsia' },
-  { value: 'thai-airasia-x', label: 'Thai AirAsia X' },
   { value: 'thai-lion-air', label: 'Thai Lion Air' },
   { value: 'thai-vietjet', label: 'Thai Vietjet Air' },
   { value: 'bangkok-airways', label: 'Bangkok Airways' },

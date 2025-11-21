@@ -61,8 +61,8 @@ export default function HomePage() {
       </section>
 
       {/* Flight Statistics Section */}
-      <section className="py-12">
-        <div className="container mx-auto px-4">
+      <section className="pt-0 pb-12">
+        <div className="container mx-auto px-4 -mt-6">
           <FlightStats />
         </div>
       </section>

@@ -7,7 +7,6 @@
 export const airlineMap: Record<string, string> = {
   'thai-airways': 'Thai Airways',
   'thai-airasia': 'Thai AirAsia',
-  'thai-airasia-x': 'Thai AirAsia X',
   'thai-lion-air': 'Thai Lion Air',
   'thai-vietjet': 'Thai Vietjet Air',
   'bangkok-airways': 'Bangkok Airways',
@@ -19,7 +18,6 @@ export const airlineBasePrices: Record<string, number> = {
   'thai-airways': 4000,
   'bangkok-airways': 3800,
   'thai-airasia': 2500,
-  'thai-airasia-x': 2800,
   'thai-lion-air': 2300,
   'thai-vietjet': 2400,
   'nok-air': 2200,

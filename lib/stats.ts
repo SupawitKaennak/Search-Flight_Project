@@ -174,3 +174,25 @@ export function getTotalPriceRecords(): number {
   return stats.prices.length
 }
 
+export function getPopularProvinces(limit: number = 5): Array<{ province: string; count: number }> {
+  const stats = getFlightStats()
+  if (stats.searches.length === 0) return []
+
+  const provinceCounts: Record<string, number> = {}
+  
+  stats.searches.forEach((search) => {
+    // Support both new format (destination) and legacy format (country)
+    const province = search.destination || search.country || ''
+    if (province) {
+      provinceCounts[province] = (provinceCounts[province] || 0) + 1
+    }
+  })
+
+  const entries = Object.entries(provinceCounts)
+    .map(([province, count]) => ({ province, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, limit)
+
+  return entries
+}
+

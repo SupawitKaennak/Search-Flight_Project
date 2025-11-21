@@ -2,9 +2,10 @@
 
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { TrendingDown, TrendingUp, Calendar, ArrowRight, ArrowLeft } from 'lucide-react'
+import { TrendingDown, TrendingUp, Calendar, ArrowRight, ArrowLeft, TrendingUp as TrendingUpIcon } from 'lucide-react'
 import { SeasonalBreakdown } from '@/components/seasonal-breakdown'
 import { AirlineFlights } from '@/components/airline-flights'
+import { PriceChart } from '@/components/price-chart'
 import { FlightSearchParams } from '@/components/flight-search-form'
 import { analyzeFlightPrices, FlightAnalysisResult } from '@/lib/flight-analysis'
 import { savePriceStat } from '@/lib/stats'
@@ -35,7 +36,9 @@ export function PriceAnalysis({ searchParams }: PriceAnalysisProps) {
           searchParams.durationRange,
           airlinesToAnalyze,
           searchParams.startDate,
-          searchParams.endDate
+          searchParams.endDate,
+          searchParams.tripType,
+          searchParams.passengerCount || 1
         )
           setAnalysis(result)
         
@@ -153,6 +156,22 @@ export function PriceAnalysis({ searchParams }: PriceAnalysisProps) {
         selectedAirlines={selectedAirlines}
         onAirlinesChange={setSelectedAirlines}
       />
+
+      {/* Price Trend Chart */}
+      <div className="mt-4 w-full max-w-6xl mx-auto">
+        <Card className="p-6 overflow-hidden">
+          <div className="flex items-center gap-2 mb-6">
+            <TrendingUpIcon className="w-6 h-6 text-primary" />
+            <h3 className="text-2xl font-bold">{'กราฟแสดงภาพรวมแนวโน้มราคา (ตั๋วไป-กลับ)'}</h3>
+          </div>
+          <p className="text-sm text-muted-foreground mb-4">
+            {'กราฟแสดงราคาตั๋วเครื่องบินตามวันที่เริ่มเดินทาง เพื่อช่วยให้คุณเลือกช่วงเวลาที่เหมาะสม'}
+          </p>
+          <div className="w-full overflow-x-auto overflow-y-auto max-h-[500px]">
+            <PriceChart data={analysis.priceChartData} tripType={searchParams.tripType} />
+          </div>
+        </Card>
+      </div>
     </div>
   )
 }

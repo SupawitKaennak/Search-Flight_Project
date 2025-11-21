@@ -3,6 +3,7 @@
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Button } from '@/components/ui/button'
 import { Plane, Clock, Calendar } from 'lucide-react'
 import { FlightSearchParams } from '@/components/flight-search-form'
 import { generateFlightsForAirline, Flight } from '@/services/mock-flights'
@@ -12,6 +13,21 @@ interface AirlineFlightsProps {
   searchParams: FlightSearchParams
   selectedAirlines: string[]
   onAirlinesChange?: (airlines: string[]) => void
+}
+
+// Mapping รูปภาพสำหรับแต่ละสายการบิน
+const getAirlineImage = (airline: string): string => {
+  const imageMap: Record<string, string> = {
+    'Thai Airways': '/airlines/thai-airways.png',
+    'Thai AirAsia': '/airlines/thai-airasia.png',
+    'Thai Lion Air': '/airlines/thai-lion-air.png',
+    'Thai Vietjet Air': '/airlines/thai-vietjet.png',
+    'Bangkok Airways': '/airlines/bangkok-airways.png',
+    'Nok Air': '/airlines/nok-air.png',
+  }
+  
+  // ใช้ placeholder เป็น default จนกว่าจะมีรูปภาพจริง
+  return imageMap[airline] || '/placeholder-logo.png'
 }
 
 export function AirlineFlights({ searchParams, selectedAirlines, onAirlinesChange }: AirlineFlightsProps) {
@@ -113,29 +129,34 @@ export function AirlineFlights({ searchParams, selectedAirlines, onAirlinesChang
         {/* Main Content - Flights */}
         <div className="flex-1">
           <Card className="p-6">
-            <div className="space-y-8">
-              {Object.entries(flightsByAirline).map(([airline, flights], airlineIndex) => (
-                <div key={airline}>
-                  {airlineIndex > 0 && <div className="border-t mb-6"></div>}
-                  <div className="flex items-center gap-3 mb-4">
-                    <Plane className="w-6 h-6 text-primary" />
-                    <h4 className="text-xl font-bold">{airline}</h4>
-                    <Badge variant="outline" className="ml-auto">
-                      {flights.length} {'เที่ยวบิน'}
-                    </Badge>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    {flights.map((flight, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between p-4 border rounded-lg hover:bg-secondary/50 transition-colors"
-                      >
-                        <div className="flex items-center gap-4 flex-1">
-                          <div className="flex flex-col items-center min-w-[80px]">
-                            <div className="text-sm text-muted-foreground">{'เวลาเดินทาง'}</div>
-                            <div className="text-lg font-bold">{flight.departureTime}</div>
-                          </div>
+            <div className="space-y-3">
+              {Object.entries(flightsByAirline).map(([airline, flights]) => {
+                const airlineImage = getAirlineImage(airline)
+                return flights.map((flight, index) => (
+                  <div
+                    key={`${airline}-${index}`}
+                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-secondary/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-4 flex-1">
+                      <div className="flex items-center gap-2">
+                        <img
+                          src={airlineImage}
+                          alt={airline}
+                          className="w-10 h-10 object-contain flex-shrink-0 bg-muted rounded"
+                          onError={(e) => {
+                            // Fallback to placeholder if image fails to load
+                            const target = e.target as HTMLImageElement
+                            // ใช้ relative path แทน absolute path เพื่อหลีกเลี่ยง hydration error
+                            if (!target.src.endsWith('/placeholder-logo.png')) {
+                              target.src = '/placeholder-logo.png'
+                            }
+                          }}
+                        />
+                        <div className="flex flex-col items-center min-w-[80px]">
+                          <div className="text-sm text-muted-foreground">{'เวลาเดินทาง'}</div>
+                          <div className="text-lg font-bold">{flight.departureTime}</div>
+                        </div>
+                      </div>
                           
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
@@ -161,19 +182,29 @@ export function AirlineFlights({ searchParams, selectedAirlines, onAirlinesChang
                           </div>
                         </div>
                         
-                        <div className="ml-6 text-right">
-                          <div className="text-2xl font-bold text-primary">
-                            {'฿'}{flight.price.toLocaleString()}
+                        <div className="ml-6 flex flex-col items-end gap-2">
+                          <div className="text-right">
+                            <div className="text-2xl font-bold text-primary">
+                              {'฿'}{flight.price.toLocaleString()}
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-1">
+                              {'ไป-กลับ'}
+                            </div>
                           </div>
-                          <div className="text-xs text-muted-foreground mt-1">
-                            {'ไป-กลับ'}
-                          </div>
+                          <Button 
+                            size="sm" 
+                            className="w-full min-w-[100px]"
+                            onClick={() => {
+                              // TODO: Handle booking logic
+                              console.log('Booking flight:', flight)
+                            }}
+                          >
+                            {'เลือก'}
+                          </Button>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
+                    ))
+              })}
             </div>
           </Card>
         </div>

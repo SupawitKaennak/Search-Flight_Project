@@ -48,6 +48,7 @@ export interface FlightAnalysisResult {
     returnDate: string
     price: number
     season: 'high' | 'normal' | 'low'
+    duration?: number
   }>
 }
 
@@ -58,7 +59,9 @@ export function analyzeFlightPrices(
   durationRange: { min: number; max: number },
   selectedAirlines: string[],
   startDate?: Date,
-  endDate?: Date
+  endDate?: Date,
+  tripType?: 'one-way' | 'round-trip' | null,
+  passengerCount: number = 1
 ): FlightAnalysisResult {
   // Generate mock data based on origin, destination and duration range
   const avgDuration = (durationRange.min + durationRange.max) / 2
@@ -122,29 +125,30 @@ export function analyzeFlightPrices(
     return season.bestDeal.price < best.bestDeal.price ? season : best
   })
 
-  // Generate price comparison
-  const recommendedPrice = bestDeal.bestDeal.price
-  const beforePrice = recommendedPrice * 1.15
-  const afterPrice = recommendedPrice * 1.2
+  // Generate price comparison (ราคา base ก่อนคูณ passengerCount)
+  const baseRecommendedPrice = bestDeal.bestDeal.price
+  const baseBeforePrice = baseRecommendedPrice * 1.15
+  const baseAfterPrice = baseRecommendedPrice * 1.2
 
   const priceComparison: PriceComparison = {
     ifGoBefore: {
       date: '1-8 พฤษภาคม 2025',
-      price: Math.round(beforePrice),
-      difference: Math.round(beforePrice - recommendedPrice),
+      price: Math.round(baseBeforePrice * passengerCount),
+      difference: Math.round((baseBeforePrice - baseRecommendedPrice) * passengerCount),
       percentage: 15,
     },
     ifGoAfter: {
       date: '23-30 พฤษภาคม 2025',
-      price: Math.round(afterPrice),
-      difference: Math.round(afterPrice - recommendedPrice),
+      price: Math.round(baseAfterPrice * passengerCount),
+      difference: Math.round((baseAfterPrice - baseRecommendedPrice) * passengerCount),
       percentage: 20,
     },
   }
 
   // Generate chart data - แกน X คือวันที่เริ่มเดินทาง
   // วันกลับจะคำนวณตามช่วงวันที่ที่ผู้ใช้ระบุ
-  const priceChartData = generateChartData(basePrice, durationRange, selectedAirlines, startDate, endDate)
+  // หมายเหตุ: ราคาใน priceChartData จะถูกคูณด้วย passengerCount ใน return statement
+  const priceChartData = generateChartData(basePrice, durationRange, selectedAirlines, startDate, endDate, tripType)
 
   // Always use bestDeal dates (Low Season dates) for recommendation
   // This shows the recommended period, not the user's selected dates
@@ -165,19 +169,35 @@ export function analyzeFlightPrices(
     returnDateStr = calculateReturnDate(startDateStr, durationToUse)
   }
 
+  // คำนวณราคาตามจำนวนผู้โดยสาร (ใช้ baseRecommendedPrice ที่ define ไว้แล้ว)
+  const baseHighSeasonPrice = seasons.find(s => s.type === 'high')!.bestDeal.price
+
   return {
     recommendedPeriod: {
       startDate: startDateStr,
       endDate: endDateStr,
       returnDate: returnDateStr,
-      price: Math.round(bestDeal.bestDeal.price),
+      price: Math.round(baseRecommendedPrice * passengerCount),
       airline: bestDeal.bestDeal.airline,
       season: bestDeal.type,
-      savings: Math.round(seasons.find(s => s.type === 'high')!.bestDeal.price - bestDeal.bestDeal.price),
+      savings: Math.round((baseHighSeasonPrice - baseRecommendedPrice) * passengerCount),
     },
-    seasons,
+    seasons: seasons.map(season => ({
+      ...season,
+      priceRange: {
+        min: Math.round(season.priceRange.min * passengerCount),
+        max: Math.round(season.priceRange.max * passengerCount),
+      },
+      bestDeal: {
+        ...season.bestDeal,
+        price: Math.round(season.bestDeal.price * passengerCount),
+      },
+    })),
     priceComparison,
-    priceChartData,
+    priceChartData: priceChartData.map(data => ({
+      ...data,
+      price: Math.round(data.price * passengerCount),
+    })),
   }
 }
 
@@ -217,7 +237,8 @@ function generateChartData(
   durationRange: { min: number; max: number },
   selectedAirlines: string[],
   userStartDate?: Date,
-  userEndDate?: Date
+  userEndDate?: Date,
+  tripType?: 'one-way' | 'round-trip' | null
 ): Array<{
   startDate: string
   returnDate: string
@@ -273,31 +294,57 @@ function generateChartData(
     durationToUse = (durationRange.min + durationRange.max) / 2
   }
 
-  // ถ้ามี userStartDate และ userEndDate ให้สร้างข้อมูลเฉพาะช่วงวันที่ที่เลือก
-  if (userStartDate && userEndDate) {
-    // ใช้ช่วงวันที่ที่ผู้ใช้เลือกโดยตรง (userStartDate ถึง userEndDate)
-    // durationToUse คำนวณจาก userEndDate - userStartDate แล้ว
-    // ซึ่งคือระยะเวลาที่ผู้ใช้เลือกไว้ (ช่วงไป ถึง ช่วงกลับ)
+  // ถ้ามี userStartDate ให้สร้างข้อมูลรอบๆ วันที่ที่เลือก
+  if (userStartDate) {
+    let chartStartDate: Date
+    let chartEndDate: Date
+    
+    if (userEndDate) {
+      // Round-trip: ใช้ช่วงวันที่ที่ผู้ใช้เลือก (userStartDate ถึง userEndDate)
+      chartStartDate = new Date(userStartDate)
+      chartEndDate = new Date(userEndDate)
+    } else {
+      // One-way: สร้างข้อมูล ±30 วันรอบวันที่ที่เลือก
+      chartStartDate = new Date(userStartDate)
+      chartStartDate.setDate(chartStartDate.getDate() - 30)
+      chartEndDate = new Date(userStartDate)
+      chartEndDate.setDate(chartEndDate.getDate() + 30)
+    }
     
     // สร้างข้อมูลทุก 3 วัน ภายในช่วงวันที่ที่เลือก
-    const currentDate = new Date(userStartDate)
-    const endDate = new Date(userEndDate)
+    const currentDate = new Date(chartStartDate)
+    const endDate = new Date(chartEndDate)
     const stepDays = 3 // ทุก 3 วัน
     
     while (currentDate <= endDate) {
       const season = getSeasonFromDate(currentDate)
       const priceMultiplier = getPriceMultiplier(season)
       
-      // คำนวณวันกลับ: ใช้ durationToUse ที่คำนวณจากช่วงวันที่ที่ผู้ใช้เลือก
-      // durationToUse = userEndDate - userStartDate (ระยะเวลาระหว่างช่วงไปและช่วงกลับ)
-      const returnDate = new Date(currentDate)
-      returnDate.setDate(returnDate.getDate() + Math.round(durationToUse))
+      // คำนวณวันกลับ: สำหรับ round-trip ใช้ durationToUse, สำหรับ one-way ไม่มีวันกลับ
+      let returnDate: Date | null = null
+      if (tripType === 'round-trip' && userEndDate) {
+        // durationToUse = userEndDate - userStartDate (ระยะเวลาระหว่างช่วงไปและช่วงกลับ)
+        returnDate = new Date(currentDate)
+        returnDate.setDate(returnDate.getDate() + Math.round(durationToUse))
+      }
 
+      // สำหรับ one-way: ราคาเที่ยวเดียว = ราคาไป-กลับ / 2
+      // สำหรับ round-trip: ราคาไป-กลับเต็ม
+      const calculatedPrice = tripType === 'one-way' 
+        ? Math.round(basePrice * priceMultiplier * 0.5)
+        : Math.round(basePrice * priceMultiplier)
+      
+      // เก็บ duration สำหรับ round-trip เพื่อใช้ใน tooltip
+      const duration = tripType === 'round-trip' && returnDate 
+        ? Math.round(durationToUse)
+        : 0
+      
       data.push({
         startDate: formatThaiDate(currentDate),
-        returnDate: formatThaiDate(returnDate),
-        price: Math.round(basePrice * priceMultiplier),
+        returnDate: tripType === 'one-way' || !returnDate ? '' : formatThaiDate(returnDate),
+        price: calculatedPrice,
         season,
+        duration, // เพิ่ม duration สำหรับใช้ใน tooltip
       })
 
       // เพิ่ม 3 วัน
@@ -331,17 +378,31 @@ function generateChartData(
       const returnDate1 = formatThaiDate(returnDate1Obj)
       const returnDate2 = formatThaiDate(returnDate2Obj)
 
+      // สำหรับ one-way: ราคาเที่ยวเดียว = ราคาไป-กลับ / 2
+      // สำหรับ round-trip: ราคาไป-กลับเต็ม
+      const calculatedPrice1 = tripType === 'one-way' 
+        ? Math.round(basePrice * priceMultiplier * 0.5)
+        : Math.round(basePrice * priceMultiplier)
+      const calculatedPrice2 = tripType === 'one-way' 
+        ? Math.round(basePrice * (priceMultiplier + (Math.random() * 0.1 - 0.05)) * 0.5)
+        : Math.round(basePrice * (priceMultiplier + (Math.random() * 0.1 - 0.05)))
+      
+      // เก็บ duration สำหรับ round-trip
+      const duration = tripType === 'round-trip' ? Math.round(durationToUse) : 0
+      
       data.push({
         startDate: startDate1,
-        returnDate: returnDate1,
-        price: Math.round(basePrice * priceMultiplier),
+        returnDate: tripType === 'one-way' ? '' : returnDate1,
+        price: calculatedPrice1,
         season: month.season,
+        duration,
       })
       data.push({
         startDate: startDate2,
-        returnDate: returnDate2,
-        price: Math.round(basePrice * (priceMultiplier + (Math.random() * 0.1 - 0.05))),
+        returnDate: tripType === 'one-way' ? '' : returnDate2,
+        price: calculatedPrice2,
         season: month.season,
+        duration,
       })
     })
   }

@@ -8,6 +8,7 @@ export interface ChartDataPoint {
   returnDate: string
   price: number
   season: 'high' | 'normal' | 'low'
+  duration?: number
 }
 
 export const defaultChartData: ChartDataPoint[] = [

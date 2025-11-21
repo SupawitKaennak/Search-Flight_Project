@@ -12,7 +12,7 @@ export const defaultSeasons: SeasonData[] = [
     bestDeal: {
       dates: '15-22 พฤษภาคม 2025',
       price: 12500,
-      airline: 'Thai AirAsia X',
+      airline: 'Thai AirAsia',
     },
     description: 'ราคาถูกที่สุดของปี เหมาะสำหรับผู้ที่มีความยืดหยุ่นในการเดินทาง',
   },
