@@ -28,14 +28,23 @@ export function generateFlightsForAirline(
   const airlineName = airlineMap[airline] || airline
   const basePrice = getBasePriceForRoute(origin, destination, airline)
   
-  // Generate 3-5 flights per airline
-  const flightCount = 3 + Math.floor(Math.random() * 3)
+  // Generate fixed number of flights per airline (4 flights) for testing
+  const flightCount = 4
   const flights: Flight[] = []
   
   const dates = startDate ? [startDate] : [
     new Date(2025, 4, 15), // May 15
     new Date(2025, 4, 20), // May 20
     new Date(2025, 5, 1),  // June 1
+    new Date(2025, 5, 10), // June 10
+  ]
+  
+  // Fixed times for testing: 08:00, 12:00, 16:00, 20:00
+  const fixedTimes = [
+    { hour: 8, minute: 0, durationHours: 1, durationMinutes: 30 },
+    { hour: 12, minute: 0, durationHours: 2, durationMinutes: 0 },
+    { hour: 16, minute: 0, durationHours: 1, durationMinutes: 45 },
+    { hour: 20, minute: 0, durationHours: 2, durationMinutes: 15 },
   ]
   
   for (let i = 0; i < flightCount; i++) {
@@ -46,22 +55,23 @@ export function generateFlightsForAirline(
       year: 'numeric' 
     })
     
-    // Generate random times
-    const departureHour = 6 + Math.floor(Math.random() * 16) // 6 AM - 10 PM
-    const departureMinute = Math.floor(Math.random() * 4) * 15 // 0, 15, 30, 45
-    const durationHours = 1 + Math.floor(Math.random() * 2) // 1-2 hours for domestic
-    const durationMinutes = Math.floor(Math.random() * 4) * 15
+    // ใช้เวลาคงที่แทนการสุ่ม
+    const time = fixedTimes[i % fixedTimes.length]
+    const departureHour = time.hour
+    const departureMinute = time.minute
+    const durationHours = time.durationHours
+    const durationMinutes = time.durationMinutes
     
     const arrivalHour = departureHour + durationHours
     const arrivalMinute = departureMinute + durationMinutes
     
     flights.push({
       airline: airlineName,
-      flightNumber: `${airline.substring(0, 2).toUpperCase()}${100 + i}${Math.floor(Math.random() * 10)}`,
+      flightNumber: `${airline.substring(0, 2).toUpperCase()}${100 + i}0`, // Fixed flight number
       departureTime: `${departureHour.toString().padStart(2, '0')}:${departureMinute.toString().padStart(2, '0')}`,
       arrivalTime: `${(arrivalHour % 24).toString().padStart(2, '0')}:${(arrivalMinute % 60).toString().padStart(2, '0')}`,
       duration: `${durationHours}h ${durationMinutes}m`,
-      price: Math.round(basePrice * (0.9 + Math.random() * 0.2)), // ±10% variation
+      price: Math.round(basePrice * 1.0), // ใช้ราคาคงที่ (basePrice) เพื่อทดสอบ
       date: dateStr,
     })
   }

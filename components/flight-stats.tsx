@@ -77,12 +77,12 @@ export function FlightStats() {
           </div>
         )}
 
-        {/* Most Searched Duration */}
+        {/* Most Searched Duration (Round Trip Only) */}
         {stats.mostSearchedDuration && (
           <div className="p-4 bg-background rounded-lg border">
             <div className="flex items-center gap-2 mb-2">
               <Calendar className="w-5 h-5 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">{'ระยะเวลาที่นิยมมากที่สุด'}</span>
+              <span className="text-sm text-muted-foreground">{'ระยะเวลาที่นิยมมากที่สุด (ไป-กลับ)'}</span>
             </div>
             <div className="text-2xl font-bold">
               {stats.mostSearchedDuration.duration}

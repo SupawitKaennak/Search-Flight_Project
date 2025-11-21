@@ -2,9 +2,11 @@
 
 export interface SearchStat {
   origin?: string
+  originName?: string
   destination?: string
   destinationName?: string
   durationRange?: string
+  tripType?: 'one-way' | 'round-trip' | null
   // Legacy fields for backward compatibility
   country?: string
   countryName?: string
@@ -77,11 +79,15 @@ export function getMostSearchedDuration(): { duration: string; count: number } |
   const durationCounts: Record<string, number> = {}
   
   stats.searches.forEach((search) => {
-    // Support both new format (durationRange) and legacy format (duration)
-    const duration = search.durationRange || (search.duration ? `${search.duration} วัน` : '')
-    if (duration) {
-      durationCounts[duration] = (durationCounts[duration] || 0) + 1
+    // นับเฉพาะ round-trip (ไป-กลับ) เท่านั้น - ไม่นับ one-way, null, หรือ undefined
+    if (search.tripType === 'round-trip') {
+      // Support both new format (durationRange) and legacy format (duration)
+      const duration = search.durationRange || (search.duration ? `${search.duration} วัน` : '')
+      if (duration) {
+        durationCounts[duration] = (durationCounts[duration] || 0) + 1
+      }
     }
+    // ไม่นับถ้า tripType เป็น 'one-way', null, หรือ undefined
   })
 
   const entries = Object.entries(durationCounts)
@@ -192,6 +198,47 @@ export function getPopularProvinces(limit: number = 5): Array<{ province: string
     .map(([province, count]) => ({ province, count }))
     .sort((a, b) => b.count - a.count)
     .slice(0, limit)
+
+  return entries
+}
+
+export function getMonthlySearchStats(): Array<{ month: string; count: number }> {
+  const stats = getFlightStats()
+  if (!stats || !stats.searches || stats.searches.length === 0) return []
+
+  const monthCounts: Record<string, number> = {}
+  const thaiMonths = [
+    'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+    'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+  ]
+  
+  stats.searches.forEach((search) => {
+    if (search && search.timestamp) {
+      try {
+        const date = new Date(search.timestamp)
+        if (!isNaN(date.getTime())) {
+          const monthIndex = date.getMonth()
+          const monthName = thaiMonths[monthIndex] || ''
+          if (monthName) {
+            monthCounts[monthName] = (monthCounts[monthName] || 0) + 1
+          }
+        }
+      } catch {
+        // Ignore invalid dates
+      }
+    }
+  })
+
+  // Sort by month order (not by count)
+  const monthOrder: Record<string, number> = {
+    'มกราคม': 1, 'กุมภาพันธ์': 2, 'มีนาคม': 3, 'เมษายน': 4,
+    'พฤษภาคม': 5, 'มิถุนายน': 6, 'กรกฎาคม': 7, 'สิงหาคม': 8,
+    'กันยายน': 9, 'ตุลาคม': 10, 'พฤศจิกายน': 11, 'ธันวาคม': 12,
+  }
+
+  const entries = Object.entries(monthCounts)
+    .map(([month, count]) => ({ month, count }))
+    .sort((a, b) => (monthOrder[a.month] || 0) - (monthOrder[b.month] || 0))
 
   return entries
 }

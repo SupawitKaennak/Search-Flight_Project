@@ -82,8 +82,8 @@ export function PriceAnalysis({ searchParams }: PriceAnalysisProps) {
   const recommendedSeason = seasons.find(s => s.type === recommendedPeriod.season)
 
   return (
-    <div className="container mx-auto px-4">
-      <div className="mb-8">
+    <div className="container mx-auto px-4 md:px-6 lg:px-35">
+      <div className="mb-8 px-2 md:px-4">
         <h2 className="text-3xl font-bold mb-3">
           <span className="inline-block">{'การวิเคราะห์ราคา'}</span>
           <span className="mx-2 text-muted-foreground">{' - '}</span>

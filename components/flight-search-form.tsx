@@ -160,11 +160,18 @@ export function FlightSearchForm({ onSearch }: FlightSearchFormProps) {
     if (typeof window !== 'undefined') {
       const stats = JSON.parse(localStorage.getItem('flightStats') || '{"searches": [], "prices": []}')
       stats.searches.push({
-        origin: originData.label,
-        destination: destinationData?.label || '',
+        origin: origin,
+        originName: originData.label,
+        destination: destination,
+        destinationName: destinationData?.label || '',
         durationRange: `${min}-${max}`,
+        tripType: tripType || null,
         timestamp: new Date().toISOString(),
       })
+      // Keep only last 1000 search records to avoid localStorage overflow
+      if (stats.searches.length > 1000) {
+        stats.searches = stats.searches.slice(-1000)
+      }
       // Ensure prices array exists
       if (!stats.prices) {
         stats.prices = []

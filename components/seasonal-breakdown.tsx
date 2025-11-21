@@ -141,7 +141,9 @@ export function SeasonalBreakdown({ seasons: propSeasons, recommendedPeriod }: S
       {recommendedPeriod && (() => {
         const currentSeasonData = seasons.find(s => s.type === currentSeason)
         const otherSeasons = seasons.filter(s => s.type !== currentSeason)
-        const currentPrice = recommendedPeriod.price
+        // ราคาปัจจุบันควรมาจาก currentSeason ไม่ใช่ recommendedPeriod.price
+        // เพราะ recommendedPeriod.price เป็นราคาของ bestDeal (Low Season) เสมอ
+        const currentPrice = currentSeasonData?.bestDeal.price || recommendedPeriod.price
         
         // Calculate comparison with other seasons
         const seasonComparisons = otherSeasons.map(season => {
@@ -237,11 +239,11 @@ export function SeasonalBreakdown({ seasons: propSeasons, recommendedPeriod }: S
                         </>
                       )}
                     </div>
-                    {currentSeason === 'high' && recommendedPeriod && (
+                    {currentSeason === 'high' && (
                       <div className="p-5 bg-background rounded-lg border">
                         <div className="text-sm text-muted-foreground mb-2">{'ราคาปัจจุบัน (High Season)'}</div>
                         <div className={`text-2xl font-bold ${recConfig.priceColor}`}>
-                          {'฿'}{recommendedPeriod.price.toLocaleString()}
+                          {'฿'}{currentPrice.toLocaleString()}
                         </div>
                       </div>
                     )}

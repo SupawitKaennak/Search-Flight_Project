@@ -2,7 +2,7 @@
 
 import { getBasePrice } from '@/services/route-prices'
 import { getSeasonConfig } from '@/services/season-config'
-import { getBestAirline } from '@/services/airline-data'
+import { getBestAirline, getBasePriceForRoute, airlineMap } from '@/services/airline-data'
 
 export interface SeasonData {
   type: 'high' | 'normal' | 'low'
@@ -71,6 +71,50 @@ export function analyzeFlightPrices(
   // วิธีคำนวณ: ใช้ข้อมูลราคาตามประเทศปลายทางและช่วงเวลา
   const seasonConfig = getSeasonConfig(destination)
   
+  // Helper function: คำนวณราคาจริงของแต่ละสายการบินและเลือกที่ถูกที่สุด
+  const getCheapestAirlineForSeason = (
+    origin: string,
+    destination: string,
+    selectedAirlines: string[],
+    season: 'high' | 'normal' | 'low',
+    seasonMultiplier: { min: number; max: number }
+  ): { airline: string; price: number } => {
+    if (selectedAirlines.length === 0) {
+      return { airline: 'Thai Airways', price: basePrice * (seasonMultiplier.min + seasonMultiplier.max) / 2 }
+    }
+
+    // คำนวณราคาของแต่ละสายการบิน
+    const airlinePrices = selectedAirlines.map(airlineKey => {
+      const airlineName = airlineMap[airlineKey] || airlineKey
+      const airlineBasePrice = getBasePriceForRoute(origin, destination, airlineKey)
+      // ใช้ราคา min สำหรับ Low Season, max สำหรับ High Season, เฉลี่ยสำหรับ Normal Season
+      // เพื่อให้ราคาต่างกันชัดเจนระหว่าง season
+      let seasonPrice: number
+      if (season === 'low') {
+        seasonPrice = airlineBasePrice * seasonMultiplier.min // ใช้ min สำหรับ Low Season
+      } else if (season === 'high') {
+        seasonPrice = airlineBasePrice * seasonMultiplier.max // ใช้ max สำหรับ High Season
+      } else {
+        seasonPrice = airlineBasePrice * (seasonMultiplier.min + seasonMultiplier.max) / 2 // เฉลี่ยสำหรับ Normal Season
+      }
+      return {
+        airlineKey,
+        airlineName,
+        price: seasonPrice,
+      }
+    })
+
+    // หาสายการบินที่ราคาต่ำสุด
+    const cheapest = airlinePrices.reduce((best, current) => 
+      current.price < best.price ? current : best
+    )
+
+    return {
+      airline: cheapest.airlineName,
+      price: Math.round(cheapest.price),
+    }
+  }
+
   const seasons: SeasonData[] = [
     {
       type: 'low',
@@ -79,12 +123,14 @@ export function analyzeFlightPrices(
         min: Math.round(basePrice * seasonConfig.low.priceMultiplier.min),
         max: Math.round(basePrice * seasonConfig.low.priceMultiplier.max),
       },
-      bestDeal: {
-        dates: seasonConfig.low.bestDealDates,
-        // ใช้ราคาเฉลี่ยของช่วง (ไม่ใช่ min) เพื่อให้สมดุลกับ season อื่น
-        price: Math.round(basePrice * (seasonConfig.low.priceMultiplier.min + seasonConfig.low.priceMultiplier.max) / 2),
-        airline: getBestAirline(destination, selectedAirlines, 'low'),
-      },
+      bestDeal: (() => {
+        const cheapest = getCheapestAirlineForSeason(origin, destination, selectedAirlines, 'low', seasonConfig.low.priceMultiplier)
+        return {
+          dates: seasonConfig.low.bestDealDates,
+          price: cheapest.price,
+          airline: cheapest.airline,
+        }
+      })(),
       description: 'ราคาถูกที่สุดของปี เหมาะสำหรับผู้ที่มีความยืดหยุ่นในการเดินทาง',
     },
     {
@@ -94,12 +140,14 @@ export function analyzeFlightPrices(
         min: Math.round(basePrice * seasonConfig.normal.priceMultiplier.min),
         max: Math.round(basePrice * seasonConfig.normal.priceMultiplier.max),
       },
-      bestDeal: {
-        dates: seasonConfig.normal.bestDealDates,
-        // ใช้ราคาใกล้ min (แต่ไม่ใช่ min) เพื่อให้มีโอกาสชนะ Low Season
-        price: Math.round(basePrice * (seasonConfig.normal.priceMultiplier.min * 0.9 + seasonConfig.normal.priceMultiplier.max * 0.1)),
-        airline: getBestAirline(destination, selectedAirlines, 'normal'),
-      },
+      bestDeal: (() => {
+        const cheapest = getCheapestAirlineForSeason(origin, destination, selectedAirlines, 'normal', seasonConfig.normal.priceMultiplier)
+        return {
+          dates: seasonConfig.normal.bestDealDates,
+          price: cheapest.price,
+          airline: cheapest.airline,
+        }
+      })(),
       description: 'ราคาปานกลาง อากาศดี เหมาะสำหรับการท่องเที่ยว',
     },
     {
@@ -109,12 +157,14 @@ export function analyzeFlightPrices(
         min: Math.round(basePrice * seasonConfig.high.priceMultiplier.min),
         max: Math.round(basePrice * seasonConfig.high.priceMultiplier.max),
       },
-      bestDeal: {
-        dates: seasonConfig.high.bestDealDates,
-        // ใช้ราคาใกล้ min เพื่อให้มีโอกาสชนะเมื่อราคาไม่ต่างกันมาก
-        price: Math.round(basePrice * (seasonConfig.high.priceMultiplier.min * 0.95 + seasonConfig.high.priceMultiplier.max * 0.05)),
-        airline: getBestAirline(destination, selectedAirlines, 'high'),
-      },
+      bestDeal: (() => {
+        const cheapest = getCheapestAirlineForSeason(origin, destination, selectedAirlines, 'high', seasonConfig.high.priceMultiplier)
+        return {
+          dates: seasonConfig.high.bestDealDates,
+          price: cheapest.price,
+          airline: cheapest.airline,
+        }
+      })(),
       description: 'ช่วงเทศกาลและปิดเทอม ราคาสูงสุด แนะนำจองล่วงหน้า',
     },
   ]
@@ -244,6 +294,7 @@ function generateChartData(
   returnDate: string
   price: number
   season: 'high' | 'normal' | 'low'
+  duration?: number
 }> {
   // Season mapping ตามข้อมูลจริงของประเทศไทย:
   // Low Season: พฤษภาคม-ตุลาคม (ฤดูฝน)
@@ -278,11 +329,12 @@ function generateChartData(
     return `${date.getDate()} ${thaiMonths[date.getMonth()]}`
   }
 
-  // Helper function to get price multiplier based on season
+  // Helper function to get price multiplier based on season (Fixed values for testing)
   const getPriceMultiplier = (season: 'high' | 'normal' | 'low'): number => {
-    if (season === 'low') return 0.7 + Math.random() * 0.15
-    if (season === 'normal') return 0.85 + Math.random() * 0.25
-    return 1.1 + Math.random() * 0.4
+    // ใช้ค่าคงที่แทนการสุ่ม เพื่อใช้ทดสอบการคำนวณและกราฟ
+    if (season === 'low') return 0.75      // ต่ำ (Low Season)
+    if (season === 'normal') return 1.0    // กลาง (Normal Season)
+    return 1.3                              // สูง (High Season)
   }
 
   const data: Array<{ startDate: string; returnDate: string; price: number; season: 'high' | 'normal' | 'low' }> = []
@@ -358,9 +410,10 @@ function generateChartData(
     // ถ้าไม่มี userStartDate และ userEndDate ใช้วิธีเดิม (วันที่ 1 และ 15 ของทุกเดือน)
     months.forEach((month) => {
       let priceMultiplier = 1
-      if (month.season === 'low') priceMultiplier = 0.7 + Math.random() * 0.15
-      else if (month.season === 'normal') priceMultiplier = 0.85 + Math.random() * 0.25
-      else priceMultiplier = 1.1 + Math.random() * 0.4
+      // ใช้ค่าคงที่แทนการสุ่ม เพื่อใช้ทดสอบการคำนวณและกราฟ
+      if (month.season === 'low') priceMultiplier = 0.75      // ต่ำ
+      else if (month.season === 'normal') priceMultiplier = 1.0    // กลาง
+      else priceMultiplier = 1.3                              // สูง
 
       // Add data points for 1st and 15th of each month (วันที่เริ่มเดินทาง)
       // สร้าง Date objects สำหรับวันที่เริ่มเดินทาง
@@ -388,8 +441,8 @@ function generateChartData(
         ? Math.round(basePrice * priceMultiplier * 0.5)
         : Math.round(basePrice * priceMultiplier)
       const calculatedPrice2 = tripType === 'one-way' 
-        ? Math.round(basePrice * (priceMultiplier + (Math.random() * 0.1 - 0.05)) * 0.5)
-        : Math.round(basePrice * (priceMultiplier + (Math.random() * 0.1 - 0.05)))
+        ? Math.round(basePrice * priceMultiplier * 0.5)
+        : Math.round(basePrice * priceMultiplier)
       
       // เก็บ duration สำหรับ round-trip
       const duration = tripType === 'round-trip' ? Math.round(durationToUse) : 0
