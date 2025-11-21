@@ -60,6 +60,13 @@ export function AirlineFlights({ searchParams, selectedAirlines, onAirlinesChang
     flightsByAirline[flight.airline].push(flight)
   })
 
+  // Get flight count for each airline
+  const getFlightCount = (airlineValue: string): number => {
+    const airline = THAI_AIRLINES.find(a => a.value === airlineValue)
+    if (!airline) return 0
+    return flightsByAirline[airline.label]?.length || 0
+  }
+
   const toggleAirline = (airlineValue: string) => {
     if (!onAirlinesChange) return
     const newSelected = selectedAirlines.includes(airlineValue)
@@ -91,21 +98,29 @@ export function AirlineFlights({ searchParams, selectedAirlines, onAirlinesChang
             <div className="mb-4">
               <h4 className="text-lg font-semibold mb-2">{'สายการบิน'}</h4>
               <div className="space-y-3">
-                {THAI_AIRLINES.map((airline) => (
-                  <div key={airline.value} className="flex items-center space-x-2 min-h-[2.5rem]">
-                    <Checkbox
-                      id={airline.value}
-                      checked={selectedAirlines.includes(airline.value)}
-                      onCheckedChange={() => toggleAirline(airline.value)}
-                    />
-                    <label
-                      htmlFor={airline.value}
-                      className="text-sm font-medium leading-none cursor-pointer flex items-center gap-2"
-                    >
-                      <span>{airline.label}</span>
-                    </label>
-                  </div>
-                ))}
+                {THAI_AIRLINES.map((airline) => {
+                  const flightCount = getFlightCount(airline.value)
+                  return (
+                    <div key={airline.value} className="flex items-center space-x-2 min-h-[2.5rem]">
+                      <Checkbox
+                        id={airline.value}
+                        checked={selectedAirlines.includes(airline.value)}
+                        onCheckedChange={() => toggleAirline(airline.value)}
+                      />
+                      <label
+                        htmlFor={airline.value}
+                        className="text-sm font-medium leading-none cursor-pointer flex items-center gap-2"
+                      >
+                        <span>{airline.label}</span>
+                        {flightCount > 0 && (
+                          <span className="text-xs text-muted-foreground">
+                            ({flightCount})
+                          </span>
+                        )}
+                      </label>
+                    </div>
+                  )
+                })}
               </div>
             </div>
             <div className="flex gap-2 pt-4 border-t">
@@ -188,7 +203,7 @@ export function AirlineFlights({ searchParams, selectedAirlines, onAirlinesChang
                               {'฿'}{flight.price.toLocaleString()}
                             </div>
                             <div className="text-xs text-muted-foreground mt-1">
-                              {'ไป-กลับ'}
+                              {searchParams.tripType === 'one-way' ? 'เที่ยวเดียว' : 'ไป-กลับ'}
                             </div>
                           </div>
                           <Button 

@@ -88,12 +88,49 @@ export function PriceAnalysis({ searchParams }: PriceAnalysisProps) {
           {'การวิเคราะห์ราคา - '}{searchParams.originName}{' → '}{searchParams.destinationName}
         </h2>
         <p className="text-muted-foreground">
-          {'สำหรับการเดินทาง '}{searchParams.durationRange.min}{'-'}{searchParams.durationRange.max}{' วัน'}
-          {selectedAirlines.length > 0 && (
-            <span className="ml-2">
-              {' (สายการบิน: '}
-              {selectedAirlines.length}{' สายการบิน)'}
-            </span>
+          {searchParams.tripType === 'one-way' ? (
+            <>
+              {'เที่ยวเดียว'}
+              {searchParams.startDate && (
+                <span className="ml-2">
+                  {' - '}
+                  {searchParams.startDate.toLocaleDateString('th-TH', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                  })}
+                </span>
+              )}
+            </>
+          ) : searchParams.tripType === 'round-trip' ? (
+            <>
+              {'ไป-กลับ'}
+              {searchParams.startDate && searchParams.endDate ? (
+                <span className="ml-2">
+                  {' - '}
+                  {searchParams.startDate.toLocaleDateString('th-TH', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                  })}
+                  {' → '}
+                  {searchParams.endDate.toLocaleDateString('th-TH', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                  })}
+                </span>
+              ) : (
+                <span className="ml-2">
+                  {' - สำหรับการเดินทาง '}
+                  {searchParams.durationRange.min}{'-'}{searchParams.durationRange.max}{' วัน'}
+                </span>
+              )}
+            </>
+          ) : (
+            <>
+              {'สำหรับการเดินทาง '}{searchParams.durationRange.min}{'-'}{searchParams.durationRange.max}{' วัน'}
+            </>
           )}
         </p>
       </div>

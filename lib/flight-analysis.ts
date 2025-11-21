@@ -245,17 +245,21 @@ function generateChartData(
   price: number
   season: 'high' | 'normal' | 'low'
 }> {
+  // Season mapping ตามข้อมูลจริงของประเทศไทย:
+  // Low Season: พฤษภาคม-ตุลาคม (ฤดูฝน)
+  // High Season: พฤศจิกายน-เมษายน (อากาศเย็น-แห้ง, วันหยุดสำคัญ)
+  // Normal Season: มีนาคม-เมษายน (ช่วงกลาง/Shoulder Season)
   const months = [
     { abbr: 'ม.ค.', name: 'มกราคม', season: 'high' as const },
-    { abbr: 'ก.พ.', name: 'กุมภาพันธ์', season: 'normal' as const },
+    { abbr: 'ก.พ.', name: 'กุมภาพันธ์', season: 'high' as const },
     { abbr: 'มี.ค.', name: 'มีนาคม', season: 'normal' as const },
-    { abbr: 'เม.ย.', name: 'เมษายน', season: 'low' as const },
+    { abbr: 'เม.ย.', name: 'เมษายน', season: 'normal' as const },
     { abbr: 'พ.ค.', name: 'พฤษภาคม', season: 'low' as const },
     { abbr: 'มิ.ย.', name: 'มิถุนายน', season: 'low' as const },
-    { abbr: 'ก.ค.', name: 'กรกฎาคม', season: 'high' as const },
-    { abbr: 'ส.ค.', name: 'สิงหาคม', season: 'high' as const },
-    { abbr: 'ก.ย.', name: 'กันยายน', season: 'normal' as const },
-    { abbr: 'ต.ค.', name: 'ตุลาคม', season: 'normal' as const },
+    { abbr: 'ก.ค.', name: 'กรกฎาคม', season: 'low' as const },
+    { abbr: 'ส.ค.', name: 'สิงหาคม', season: 'low' as const },
+    { abbr: 'ก.ย.', name: 'กันยายน', season: 'low' as const },
+    { abbr: 'ต.ค.', name: 'ตุลาคม', season: 'low' as const },
     { abbr: 'พ.ย.', name: 'พฤศจิกายน', season: 'high' as const },
     { abbr: 'ธ.ค.', name: 'ธันวาคม', season: 'high' as const },
   ]

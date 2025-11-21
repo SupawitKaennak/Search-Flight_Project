@@ -13,22 +13,23 @@ export interface SeasonConfig {
   high: { months: string[]; priceMultiplier: { min: number; max: number }; bestDealDates: string }
 }
 
-// Default configuration สำหรับประเทศที่ไม่มี Rule เฉพาะ
+// Default configuration สำหรับประเทศไทย
+// อ้างอิง: Low Season (พฤษภาคม-ตุลาคม), High Season (พฤศจิกายน-เมษายน), Normal Season (มีนาคม-เมษายน)
 const defaultConfig: SeasonConfig = {
   low: {
-    months: ['พฤษภาคม', 'มิถุนายน', 'กันยายน'],
+    months: ['พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม'], // ฤดูฝน
     priceMultiplier: { min: 0.7, max: 0.85 },
-    bestDealDates: '15-22 พฤษภาคม 2025',
+    bestDealDates: '15-22 มิถุนายน 2025',
   },
   normal: {
-    months: ['กุมภาพันธ์', 'มีนาคม', 'ตุลาคม', 'พฤศจิกายน'],
+    months: ['มีนาคม', 'เมษายน'], // ช่วงกลาง (Shoulder Season)
     priceMultiplier: { min: 0.85, max: 1.1 },
     bestDealDates: '5-12 มีนาคม 2025',
   },
   high: {
-    months: ['มกราคม', 'เมษายน', 'กรกฎาคม', 'สิงหาคม', 'ธันวาคม'],
+    months: ['พฤศจิกายน', 'ธันวาคม', 'มกราคม', 'กุมภาพันธ์'], // อากาศเย็น-แห้ง, วันหยุดสำคัญ
     priceMultiplier: { min: 1.1, max: 1.5 },
-    bestDealDates: '10-17 กรกฎาคม 2025',
+    bestDealDates: '20-27 ธันวาคม 2025',
   },
 }
 
@@ -37,34 +38,34 @@ const provinceConfigs: Record<string, SeasonConfig> = {
   // === จังหวัดท่องเที่ยวหลัก ===
   'chiang-mai': {
     low: {
-      months: ['พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'กันยายน'], // ฤดูฝน
+      months: ['พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม'], // ฤดูฝน
       priceMultiplier: { min: 0.7, max: 0.85 },
       bestDealDates: '1-8 มิถุนายน 2025',
     },
     normal: {
-      months: ['มีนาคม', 'เมษายน', 'สิงหาคม', 'ตุลาคม'], 
+      months: ['มีนาคม', 'เมษายน'], // ช่วงกลาง
       priceMultiplier: { min: 0.85, max: 1.1 },
       bestDealDates: '10-17 มีนาคม 2025',
     },
     high: {
-      months: ['มกราคม', 'กุมภาพันธ์', 'พฤศจิกายน', 'ธันวาคม'], // ฤดูหนาว/ดอกไม้บาน
+      months: ['พฤศจิกายน', 'ธันวาคม', 'มกราคม', 'กุมภาพันธ์'], // ฤดูหนาว/ดอกไม้บาน
       priceMultiplier: { min: 1.2, max: 1.7 },
       bestDealDates: '20-27 ธันวาคม 2025',
     },
   },
   'phuket': {
     low: {
-      months: ['พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'กันยายน'], // ฤดูฝน
+      months: ['พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม'], // ฤดูฝน
       priceMultiplier: { min: 0.65, max: 0.8 },
       bestDealDates: '1-8 มิถุนายน 2025',
     },
     normal: {
-      months: ['มีนาคม', 'เมษายน', 'สิงหาคม', 'ตุลาคม'], 
+      months: ['มีนาคม', 'เมษายน'], // ช่วงกลาง
       priceMultiplier: { min: 0.8, max: 1.1 },
       bestDealDates: '10-17 มีนาคม 2025',
     },
     high: {
-      months: ['มกราคม', 'กุมภาพันธ์', 'พฤศจิกายน', 'ธันวาคม'], // ฤดูท่องเที่ยว
+      months: ['พฤศจิกายน', 'ธันวาคม', 'มกราคม', 'กุมภาพันธ์'], // ฤดูท่องเที่ยว
       priceMultiplier: { min: 1.2, max: 1.7 },
       bestDealDates: '20-27 ธันวาคม 2025',
     },
