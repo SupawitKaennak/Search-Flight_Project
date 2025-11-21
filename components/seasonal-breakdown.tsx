@@ -219,12 +219,22 @@ export function SeasonalBreakdown({ seasons: propSeasons, recommendedPeriod }: S
                   <div className="grid md:grid-cols-2 gap-4">
                     <div className="p-5 bg-background rounded-lg border">
                       <div className="text-sm text-muted-foreground mb-2">{'แนะนำจองในช่วง Low Season'}</div>
-                      <div className="text-lg font-semibold text-green-600">{lowSeasonMonths}</div>
+                      <div className="text-lg font-semibold text-green-600 mb-2">{lowSeasonMonths}</div>
                       {lowSeasonData && (
-                        <div className="text-sm text-muted-foreground mt-2">
-                          {'ราคา: ฿'}{lowSeasonData.priceRange.min.toLocaleString()}
-                          {' - ฿'}{lowSeasonData.priceRange.max.toLocaleString()}
-                        </div>
+                        <>
+                          <div className="text-sm text-muted-foreground mb-2">
+                            {'ราคา: ฿'}{lowSeasonData.priceRange.min.toLocaleString()}
+                            {' - ฿'}{lowSeasonData.priceRange.max.toLocaleString()}
+                          </div>
+                          {lowSeasonData.bestDeal?.airline && (
+                            <div className="text-sm text-muted-foreground">
+                              {'สายการบินที่ถูกที่สุด: '}
+                              <span className="font-semibold text-green-600">
+                                {lowSeasonData.bestDeal.airline}
+                              </span>
+                            </div>
+                          )}
+                        </>
                       )}
                     </div>
                     {currentSeason === 'high' && recommendedPeriod && (

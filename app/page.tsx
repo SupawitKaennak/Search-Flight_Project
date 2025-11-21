@@ -6,6 +6,7 @@ import { FlightSearchForm, FlightSearchParams } from '@/components/flight-search
 import { PriceAnalysis } from '@/components/price-analysis'
 import { PopularDestinations } from '@/components/popular-destinations'
 import { FlightStats } from '@/components/flight-stats'
+import { ScrollToTopButton } from '@/components/scroll-to-top-button'
 
 export default function HomePage() {
   const [searchParams, setSearchParams] = useState<FlightSearchParams | null>(null)
@@ -71,6 +72,9 @@ export default function HomePage() {
       <section id="destinations" className="py-12 bg-secondary/30">
         <PopularDestinations />
       </section>
+
+      {/* Scroll to Top Button */}
+      <ScrollToTopButton />
     </main>
   )
 }

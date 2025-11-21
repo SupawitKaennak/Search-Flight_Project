@@ -84,52 +84,68 @@ export function PriceAnalysis({ searchParams }: PriceAnalysisProps) {
   return (
     <div className="container mx-auto px-4">
       <div className="mb-8">
-        <h2 className="text-3xl font-bold mb-2">
-          {'การวิเคราะห์ราคา - '}{searchParams.originName}{' → '}{searchParams.destinationName}
+        <h2 className="text-3xl font-bold mb-3">
+          <span className="inline-block">{'การวิเคราะห์ราคา'}</span>
+          <span className="mx-2 text-muted-foreground">{' - '}</span>
+          <span className="inline-block">{searchParams.originName}</span>
+          <span className="mx-2 text-primary">{' → '}</span>
+          <span className="inline-block">{searchParams.destinationName}</span>
         </h2>
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground text-lg">
           {searchParams.tripType === 'one-way' ? (
             <>
-              {'เที่ยวเดียว'}
+              <span className="font-medium">{'เที่ยวเดียว'}</span>
               {searchParams.startDate && (
-                <span className="ml-2">
-                  {' - '}
-                  {searchParams.startDate.toLocaleDateString('th-TH', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric'
-                  })}
+                <span className="ml-3">
+                  <span className="text-muted-foreground/70">{' - '}</span>
+                  <span className="font-medium">
+                    {searchParams.startDate.toLocaleDateString('th-TH', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric'
+                    })}
+                  </span>
                 </span>
               )}
             </>
           ) : searchParams.tripType === 'round-trip' ? (
             <>
-              {'ไป-กลับ'}
+              <span className="font-medium">{'ไป-กลับ'}</span>
               {searchParams.startDate && searchParams.endDate ? (
-                <span className="ml-2">
-                  {' - '}
-                  {searchParams.startDate.toLocaleDateString('th-TH', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric'
-                  })}
-                  {' → '}
-                  {searchParams.endDate.toLocaleDateString('th-TH', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric'
-                  })}
+                <span className="ml-3">
+                  <span className="text-muted-foreground/70">{' - '}</span>
+                  <span className="font-medium">
+                    {searchParams.startDate.toLocaleDateString('th-TH', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric'
+                    })}
+                  </span>
+                  <span className="mx-2 text-primary">{' → '}</span>
+                  <span className="font-medium">
+                    {searchParams.endDate.toLocaleDateString('th-TH', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric'
+                    })}
+                  </span>
                 </span>
               ) : (
-                <span className="ml-2">
-                  {' - สำหรับการเดินทาง '}
-                  {searchParams.durationRange.min}{'-'}{searchParams.durationRange.max}{' วัน'}
+                <span className="ml-3">
+                  <span className="text-muted-foreground/70">{' - '}</span>
+                  <span>{'สำหรับการเดินทาง '}</span>
+                  <span className="font-medium">
+                    {searchParams.durationRange.min}{'-'}{searchParams.durationRange.max}{' วัน'}
+                  </span>
                 </span>
               )}
             </>
           ) : (
             <>
-              {'สำหรับการเดินทาง '}{searchParams.durationRange.min}{'-'}{searchParams.durationRange.max}{' วัน'}
+              <span>{'สำหรับการเดินทาง '}</span>
+              <span className="font-medium">
+                {searchParams.durationRange.min}{'-'}{searchParams.durationRange.max}{' วัน'}
+              </span>
             </>
           )}
         </p>
