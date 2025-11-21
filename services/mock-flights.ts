@@ -4,6 +4,7 @@
  */
 
 import { airlineMap, getBasePriceForRoute } from './airline-data'
+import { calculatePricingFactors } from './pricing-factors'
 
 export interface Flight {
   airline: string
@@ -65,13 +66,18 @@ export function generateFlightsForAirline(
     const arrivalHour = departureHour + durationHours
     const arrivalMinute = departureMinute + durationMinutes
     
+    // คำนวณราคาโดยใช้ pricing factors (เทศกาล, วันในสัปดาห์, การจองล่วงหน้า)
+    const today = new Date()
+    const factors = calculatePricingFactors(today, date)
+    const finalPrice = Math.round(basePrice * factors.totalMultiplier)
+
     flights.push({
       airline: airlineName,
       flightNumber: `${airline.substring(0, 2).toUpperCase()}${100 + i}0`, // Fixed flight number
       departureTime: `${departureHour.toString().padStart(2, '0')}:${departureMinute.toString().padStart(2, '0')}`,
       arrivalTime: `${(arrivalHour % 24).toString().padStart(2, '0')}:${(arrivalMinute % 60).toString().padStart(2, '0')}`,
       duration: `${durationHours}h ${durationMinutes}m`,
-      price: Math.round(basePrice * 1.0), // ใช้ราคาคงที่ (basePrice) เพื่อทดสอบ
+      price: finalPrice, // ใช้ราคาที่คำนวณจาก pricing factors
       date: dateStr,
     })
   }

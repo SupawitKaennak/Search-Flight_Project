@@ -3,6 +3,7 @@
 import { getBasePrice } from '@/services/route-prices'
 import { getSeasonConfig } from '@/services/season-config'
 import { getBestAirline, getBasePriceForRoute, airlineMap } from '@/services/airline-data'
+import { calculatePricingFactors } from '@/services/pricing-factors'
 
 export interface SeasonData {
   type: 'high' | 'normal' | 'low'
@@ -77,16 +78,30 @@ export function analyzeFlightPrices(
     destination: string,
     selectedAirlines: string[],
     season: 'high' | 'normal' | 'low',
-    seasonMultiplier: { min: number; max: number }
+    seasonMultiplier: { min: number; max: number },
+    travelDate?: Date,
+    bookingDate?: Date
   ): { airline: string; price: number } => {
+    // ใช้วันปัจจุบันเป็น bookingDate ถ้าไม่ได้ระบุ
+    const today = bookingDate || new Date()
+    // ใช้ travelDate ถ้ามี ถ้าไม่มีให้ใช้ bestDealDates (จะคำนวณภายหลัง)
+    const targetDate = travelDate || new Date()
+
     if (selectedAirlines.length === 0) {
-      return { airline: 'Thai Airways', price: basePrice * (seasonMultiplier.min + seasonMultiplier.max) / 2 }
+      let baseSeasonPrice = basePrice * (seasonMultiplier.min + seasonMultiplier.max) / 2
+      // เพิ่ม pricing factors ถ้ามี travelDate
+      if (travelDate) {
+        const factors = calculatePricingFactors(today, travelDate)
+        baseSeasonPrice *= factors.totalMultiplier
+      }
+      return { airline: 'Thai Airways', price: Math.round(baseSeasonPrice) }
     }
 
     // คำนวณราคาของแต่ละสายการบิน
     const airlinePrices = selectedAirlines.map(airlineKey => {
       const airlineName = airlineMap[airlineKey] || airlineKey
       const airlineBasePrice = getBasePriceForRoute(origin, destination, airlineKey)
+      
       // ใช้ราคา min สำหรับ Low Season, max สำหรับ High Season, เฉลี่ยสำหรับ Normal Season
       // เพื่อให้ราคาต่างกันชัดเจนระหว่าง season
       let seasonPrice: number
@@ -97,6 +112,13 @@ export function analyzeFlightPrices(
       } else {
         seasonPrice = airlineBasePrice * (seasonMultiplier.min + seasonMultiplier.max) / 2 // เฉลี่ยสำหรับ Normal Season
       }
+
+      // เพิ่ม pricing factors (เทศกาล, วันในสัปดาห์, การจองล่วงหน้า)
+      if (travelDate) {
+        const factors = calculatePricingFactors(today, travelDate)
+        seasonPrice *= factors.totalMultiplier
+      }
+
       return {
         airlineKey,
         airlineName,
@@ -124,7 +146,9 @@ export function analyzeFlightPrices(
         max: Math.round(basePrice * seasonConfig.low.priceMultiplier.max),
       },
       bestDeal: (() => {
-        const cheapest = getCheapestAirlineForSeason(origin, destination, selectedAirlines, 'low', seasonConfig.low.priceMultiplier)
+        // ใช้ startDate ถ้ามี ถ้าไม่มีให้ใช้ bestDealDates (แปลงเป็น Date)
+        const bestDealDate = startDate || parseBestDealDate(seasonConfig.low.bestDealDates)
+        const cheapest = getCheapestAirlineForSeason(origin, destination, selectedAirlines, 'low', seasonConfig.low.priceMultiplier, bestDealDate, new Date())
         return {
           dates: seasonConfig.low.bestDealDates,
           price: cheapest.price,
@@ -141,7 +165,8 @@ export function analyzeFlightPrices(
         max: Math.round(basePrice * seasonConfig.normal.priceMultiplier.max),
       },
       bestDeal: (() => {
-        const cheapest = getCheapestAirlineForSeason(origin, destination, selectedAirlines, 'normal', seasonConfig.normal.priceMultiplier)
+        const bestDealDate = startDate || parseBestDealDate(seasonConfig.normal.bestDealDates)
+        const cheapest = getCheapestAirlineForSeason(origin, destination, selectedAirlines, 'normal', seasonConfig.normal.priceMultiplier, bestDealDate, new Date())
         return {
           dates: seasonConfig.normal.bestDealDates,
           price: cheapest.price,
@@ -158,7 +183,8 @@ export function analyzeFlightPrices(
         max: Math.round(basePrice * seasonConfig.high.priceMultiplier.max),
       },
       bestDeal: (() => {
-        const cheapest = getCheapestAirlineForSeason(origin, destination, selectedAirlines, 'high', seasonConfig.high.priceMultiplier)
+        const bestDealDate = startDate || parseBestDealDate(seasonConfig.high.bestDealDates)
+        const cheapest = getCheapestAirlineForSeason(origin, destination, selectedAirlines, 'high', seasonConfig.high.priceMultiplier, bestDealDate, new Date())
         return {
           dates: seasonConfig.high.bestDealDates,
           price: cheapest.price,
@@ -252,6 +278,31 @@ export function analyzeFlightPrices(
 }
 
 
+/**
+ * แปลง bestDealDates string เป็น Date object
+ * ตัวอย่าง: "15-22 มิถุนายน 2025" -> Date(2025, 5, 15)
+ */
+function parseBestDealDate(dateString: string): Date {
+  // พยายาม parse รูปแบบ "15-22 มิถุนายน 2025" หรือ "15 มิถุนายน 2025"
+  const match = dateString.match(/(\d+)(?:\s*-\s*\d+)?\s+(.+?)\s+(\d+)/)
+  if (match) {
+    const day = parseInt(match[1])
+    const monthName = match[2]
+    const year = parseInt(match[3])
+    
+    const thaiMonths = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+      'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม']
+    const monthIndex = thaiMonths.findIndex(m => m === monthName)
+    
+    if (monthIndex !== -1) {
+      return new Date(year, monthIndex, day)
+    }
+  }
+  
+  // Fallback: ใช้วันที่ปัจจุบัน
+  return new Date()
+}
+
 function calculateReturnDate(startDate: string, duration: number): string {
   // Parse Thai date string format: "15 พฤษภาคม 2025"
   const monthNames: Record<string, number> = {
@@ -337,6 +388,27 @@ function generateChartData(
     return 1.3                              // สูง (High Season)
   }
 
+  // Helper function to calculate price with pricing factors
+  const calculatePriceWithFactors = (
+    basePrice: number,
+    seasonMultiplier: number,
+    travelDate: Date,
+    tripType: 'one-way' | 'round-trip' | null
+  ): number => {
+    const today = new Date()
+    const factors = calculatePricingFactors(today, travelDate)
+    
+    // คำนวณราคา: basePrice × seasonMultiplier × pricingFactors
+    let price = basePrice * seasonMultiplier * factors.totalMultiplier
+    
+    // สำหรับ one-way: ราคาเที่ยวเดียว = ราคาไป-กลับ / 2
+    if (tripType === 'one-way') {
+      price = price * 0.5
+    }
+    
+    return Math.round(price)
+  }
+
   const data: Array<{ startDate: string; returnDate: string; price: number; season: 'high' | 'normal' | 'low' }> = []
   
   // คำนวณ duration จากช่วงวันที่ที่ผู้ใช้ระบุ (ถ้ามี)
@@ -384,11 +456,8 @@ function generateChartData(
         returnDate.setDate(returnDate.getDate() + Math.round(durationToUse))
       }
 
-      // สำหรับ one-way: ราคาเที่ยวเดียว = ราคาไป-กลับ / 2
-      // สำหรับ round-trip: ราคาไป-กลับเต็ม
-      const calculatedPrice = tripType === 'one-way' 
-        ? Math.round(basePrice * priceMultiplier * 0.5)
-        : Math.round(basePrice * priceMultiplier)
+      // คำนวณราคาโดยใช้ pricing factors (เทศกาล, วันในสัปดาห์, การจองล่วงหน้า)
+      const calculatedPrice = calculatePriceWithFactors(basePrice, priceMultiplier, currentDate, tripType || null)
       
       // เก็บ duration สำหรับ round-trip เพื่อใช้ใน tooltip
       const duration = tripType === 'round-trip' && returnDate 
@@ -435,14 +504,9 @@ function generateChartData(
       const returnDate1 = formatThaiDate(returnDate1Obj)
       const returnDate2 = formatThaiDate(returnDate2Obj)
 
-      // สำหรับ one-way: ราคาเที่ยวเดียว = ราคาไป-กลับ / 2
-      // สำหรับ round-trip: ราคาไป-กลับเต็ม
-      const calculatedPrice1 = tripType === 'one-way' 
-        ? Math.round(basePrice * priceMultiplier * 0.5)
-        : Math.round(basePrice * priceMultiplier)
-      const calculatedPrice2 = tripType === 'one-way' 
-        ? Math.round(basePrice * priceMultiplier * 0.5)
-        : Math.round(basePrice * priceMultiplier)
+      // คำนวณราคาโดยใช้ pricing factors
+      const calculatedPrice1 = calculatePriceWithFactors(basePrice, priceMultiplier, startDate1Obj, tripType || null)
+      const calculatedPrice2 = calculatePriceWithFactors(basePrice, priceMultiplier, startDate2Obj, tripType || null)
       
       // เก็บ duration สำหรับ round-trip
       const duration = tripType === 'round-trip' ? Math.round(durationToUse) : 0
