@@ -4,7 +4,7 @@
  */
 
 import { airlineMap, getBasePriceForRoute } from './airline-data'
-import { calculatePricingFactors } from './pricing-factors'
+import { calculatePricingFactors } from '../pricing-factors'
 
 export interface Flight {
   airline: string

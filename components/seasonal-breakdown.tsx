@@ -6,7 +6,7 @@ import { TrendingDown, Info, AlertCircle, TrendingUp } from 'lucide-react'
 import { SeasonData } from '@/lib/flight-analysis'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { defaultSeasons } from '@/services/mock-seasons'
+import { defaultSeasons } from '@/services/mock/mock-seasons'
 import { thaiMonths, thaiMonthsFull } from '@/services/constants'
 import { useState } from 'react'
 

@@ -7,10 +7,11 @@ import { SeasonalBreakdown } from '@/components/seasonal-breakdown'
 import { AirlineFlights } from '@/components/airline-flights'
 import { PriceChart } from '@/components/price-chart'
 import { FlightSearchParams } from '@/components/flight-search-form'
-import { analyzeFlightPrices, FlightAnalysisResult } from '@/lib/flight-analysis'
+import { FlightAnalysisResult } from '@/lib/flight-analysis'
 import { savePriceStat } from '@/lib/stats'
 import { THAI_AIRLINES } from '@/services/constants'
 import { useState, useEffect } from 'react'
+import { flightService } from '@/lib/services/flight-service'
 
 interface PriceAnalysisProps {
   searchParams?: FlightSearchParams | null
@@ -30,29 +31,33 @@ export function PriceAnalysis({ searchParams }: PriceAnalysisProps) {
         : selectedAirlines
       
       if (airlinesToAnalyze.length > 0) {
-        const result = analyzeFlightPrices(
-          searchParams.origin,
-          searchParams.destination,
-          searchParams.durationRange,
-          airlinesToAnalyze,
-          searchParams.startDate,
-          searchParams.endDate,
-          searchParams.tripType,
-          searchParams.passengerCount || 1
-        )
-          setAnalysis(result)
-        
-        // Save price statistics for future trend analysis
-        savePriceStat({
-          origin: searchParams.origin,
-          destination: searchParams.destination,
-          originName: searchParams.originName,
-          destinationName: searchParams.destinationName,
-          recommendedPrice: result.recommendedPeriod.price,
-          season: result.recommendedPeriod.season,
-          airline: result.recommendedPeriod.airline,
-          timestamp: new Date().toISOString(),
-        })
+        // Use flight service instead of direct function call
+        const paramsWithAirlines: FlightSearchParams = {
+          ...searchParams,
+          selectedAirlines: airlinesToAnalyze,
+        }
+
+        flightService
+          .analyzePrices(paramsWithAirlines)
+          .then((result) => {
+            setAnalysis(result)
+            
+            // Save price statistics for future trend analysis
+            savePriceStat({
+              origin: searchParams.origin,
+              destination: searchParams.destination,
+              originName: searchParams.originName,
+              destinationName: searchParams.destinationName,
+              recommendedPrice: result.recommendedPeriod.price,
+              season: result.recommendedPeriod.season,
+              airline: result.recommendedPeriod.airline,
+              timestamp: new Date().toISOString(),
+            })
+          })
+          .catch((error) => {
+            console.error('Error analyzing flight prices:', error)
+            setAnalysis(null)
+          })
       } else {
         setAnalysis(null)
       }
@@ -172,11 +177,15 @@ export function PriceAnalysis({ searchParams }: PriceAnalysisProps) {
               {'฿'}{priceComparison.ifGoBefore.price.toLocaleString()}
             </div>
             <div className="text-sm text-muted-foreground">
-              {'แพงกว่า '}
-              <span className="font-semibold text-orange-600">
-                {'฿'}{priceComparison.ifGoBefore.difference.toLocaleString()}
+              {priceComparison.ifGoBefore.difference >= 0 ? 'แพงกว่า ' : 'ถูกกว่า '}
+              <span className={`font-semibold ${priceComparison.ifGoBefore.difference >= 0 ? 'text-orange-600' : 'text-green-600'}`}>
+                {'฿'}{Math.abs(priceComparison.ifGoBefore.difference).toLocaleString()}
               </span>
-              {' ('}{priceComparison.ifGoBefore.percentage}{'%)'}
+              {' ('}
+              <span className={priceComparison.ifGoBefore.difference >= 0 ? 'text-orange-600' : 'text-green-600'}>
+                {priceComparison.ifGoBefore.percentage >= 0 ? '+' : ''}{priceComparison.ifGoBefore.percentage}
+              </span>
+              {'%)'}
             </div>
           </div>
         </Card>
@@ -192,11 +201,15 @@ export function PriceAnalysis({ searchParams }: PriceAnalysisProps) {
               {'฿'}{priceComparison.ifGoAfter.price.toLocaleString()}
             </div>
             <div className="text-sm text-muted-foreground">
-              {'แพงกว่า '}
-              <span className="font-semibold text-blue-600">
-                {'฿'}{priceComparison.ifGoAfter.difference.toLocaleString()}
+              {priceComparison.ifGoAfter.difference >= 0 ? 'แพงกว่า ' : 'ถูกกว่า '}
+              <span className={`font-semibold ${priceComparison.ifGoAfter.difference >= 0 ? 'text-blue-600' : 'text-green-600'}`}>
+                {'฿'}{Math.abs(priceComparison.ifGoAfter.difference).toLocaleString()}
               </span>
-              {' ('}{priceComparison.ifGoAfter.percentage}{'%)'}
+              {' ('}
+              <span className={priceComparison.ifGoAfter.difference >= 0 ? 'text-blue-600' : 'text-green-600'}>
+                {priceComparison.ifGoAfter.percentage >= 0 ? '+' : ''}{priceComparison.ifGoAfter.percentage}
+              </span>
+              {'%)'}
             </div>
           </div>
         </Card>

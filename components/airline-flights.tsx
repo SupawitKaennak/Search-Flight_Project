@@ -6,7 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import { Plane, Clock, Calendar } from 'lucide-react'
 import { FlightSearchParams } from '@/components/flight-search-form'
-import { generateFlightsForAirline, Flight } from '@/services/mock-flights'
+import { generateFlightsForAirline, Flight } from '@/services/mock/mock-flights'
 import { THAI_AIRLINES } from '@/services/constants'
 
 interface AirlineFlightsProps {

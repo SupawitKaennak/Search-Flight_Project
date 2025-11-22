@@ -3,7 +3,7 @@
 import { Card } from '@/components/ui/card'
 import { Area, AreaChart, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
-import { defaultChartData } from '@/services/mock-chart-data'
+import { defaultChartData } from '@/services/mock/mock-chart-data'
 import { monthOrder } from '@/services/constants'
 
 const getChartConfig = (tripType?: 'one-way' | 'round-trip' | null) => ({

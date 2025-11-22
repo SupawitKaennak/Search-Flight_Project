@@ -1,7 +1,7 @@
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { TrendingUp, Users } from 'lucide-react'
-import { popularDestinations } from '@/services/mock-destinations'
+import { popularDestinations } from '@/services/mock/mock-destinations'
 
 export function PopularDestinations() {
   return (
