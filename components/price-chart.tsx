@@ -9,7 +9,7 @@ import { monthOrder } from '@/services/constants'
 const getChartConfig = (tripType?: 'one-way' | 'round-trip' | null) => ({
   price: {
     label: tripType === 'one-way' ? 'ราคาเที่ยวเดียว' : 'ราคาไป-กลับ',
-    color: 'hsl(var(--chart-1))',
+    color: 'hsl(221, 83%, 53%)', // สีน้ำเงินสวย
   },
 })
 
@@ -58,7 +58,7 @@ export function PriceChart({ data, tripType }: PriceChartProps) {
       <ChartContainer config={chartConfig}>
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={transformedData} margin={{ top: 30, right: 40, left: 10, bottom: 80 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
             <XAxis 
               dataKey="date" 
               stroke="hsl(var(--muted-foreground))"
@@ -74,6 +74,7 @@ export function PriceChart({ data, tripType }: PriceChartProps) {
               fontSize={12}
               tickFormatter={(value) => `฿${(value / 1000).toFixed(0)}k`}
               tickCount={8}
+              tick={{ fill: 'hsl(var(--muted-foreground))' }}
             />
             <ChartTooltip 
               content={<ChartTooltipContent 
@@ -110,14 +111,29 @@ export function PriceChart({ data, tripType }: PriceChartProps) {
                 }}
               />} 
             />
+            <defs>
+              {/* Gradient สำหรับพื้นที่กราฟ */}
+              <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="hsl(221, 83%, 53%)" stopOpacity={0.4} />
+                <stop offset="50%" stopColor="hsl(221, 83%, 53%)" stopOpacity={0.2} />
+                <stop offset="100%" stopColor="hsl(221, 83%, 53%)" stopOpacity={0.05} />
+              </linearGradient>
+              {/* Gradient สำหรับเส้นกราฟ */}
+              <linearGradient id="priceStrokeGradient" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="hsl(221, 83%, 53%)" />
+                <stop offset="50%" stopColor="hsl(221, 83%, 60%)" />
+                <stop offset="100%" stopColor="hsl(221, 83%, 53%)" />
+              </linearGradient>
+            </defs>
             <ReferenceLine 
               y={lowestPrice} 
-              stroke="hsl(var(--accent))" 
+              stroke="hsl(142, 76%, 36%)" 
               strokeDasharray="3 3"
+              strokeWidth={2}
               label={{ 
                 value: 'ราคาถูกที่สุด', 
                 position: 'insideTopRight', 
-                fill: 'hsl(var(--accent))',
+                fill: 'hsl(142, 76%, 36%)',
                 fontSize: 12,
                 fontWeight: 'bold'
               }}
@@ -125,12 +141,23 @@ export function PriceChart({ data, tripType }: PriceChartProps) {
             <Area 
               type="monotone" 
               dataKey="price" 
-              stroke="hsl(var(--primary))" 
-              fill="hsl(var(--primary))"
-              fillOpacity={0.2}
+              stroke="url(#priceStrokeGradient)" 
+              fill="url(#priceGradient)"
               strokeWidth={3}
-              dot={{ fill: 'hsl(var(--primary))', r: 4, strokeWidth: 2, stroke: 'hsl(var(--background))' }}
-              activeDot={{ r: 6, strokeWidth: 2, stroke: 'hsl(var(--background))' }}
+              dot={{ 
+                fill: 'hsl(221, 83%, 53%)', 
+                r: 5, 
+                strokeWidth: 3, 
+                stroke: 'hsl(0, 0%, 100%)',
+                opacity: 0.9
+              }}
+              activeDot={{ 
+                r: 7, 
+                strokeWidth: 3, 
+                stroke: 'hsl(0, 0%, 100%)',
+                fill: 'hsl(221, 83%, 53%)',
+                style: { filter: 'drop-shadow(0 2px 4px rgba(59, 130, 246, 0.5))' }
+              }}
               connectNulls={false}
               isAnimationActive={true}
             />

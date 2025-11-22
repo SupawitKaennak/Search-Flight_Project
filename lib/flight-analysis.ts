@@ -201,23 +201,135 @@ export function analyzeFlightPrices(
     return season.bestDeal.price < best.bestDeal.price ? season : best
   })
 
+  // Helper functions สำหรับคำนวณ price comparison
+  const getSeasonFromDate = (date: Date): 'high' | 'normal' | 'low' => {
+    const month = date.getMonth()
+    // Low Season: พฤษภาคม-ตุลาคม (4-9)
+    if (month >= 4 && month <= 9) return 'low'
+    // Normal Season: มีนาคม-เมษายน (2-3)
+    if (month >= 2 && month <= 3) return 'normal'
+    // High Season: พฤศจิกายน-กุมภาพันธ์ (10, 11, 0, 1)
+    return 'high'
+  }
+  
+  const formatThaiDateRange = (start: Date, end: Date): string => {
+    const thaiMonths = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+      'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม']
+    
+    const startDay = start.getDate()
+    const startMonth = thaiMonths[start.getMonth()]
+    const startYear = start.getFullYear()
+    
+    const endDay = end.getDate()
+    const endMonth = thaiMonths[end.getMonth()]
+    const endYear = end.getFullYear()
+    
+    // ถ้าเดือนเดียวกัน
+    if (startMonth === endMonth && startYear === endYear) {
+      return `${startDay}-${endDay} ${startMonth} ${startYear}`
+    }
+    // ถ้าปีเดียวกัน แต่เดือนต่างกัน
+    if (startYear === endYear) {
+      return `${startDay} ${startMonth} - ${endDay} ${endMonth} ${startYear}`
+    }
+    // ถ้าปีต่างกัน
+    return `${startDay} ${startMonth} ${startYear} - ${endDay} ${endMonth} ${endYear}`
+  }
+  
   // Generate price comparison (ราคา base ก่อนคูณ passengerCount)
   const baseRecommendedPrice = bestDeal.bestDeal.price
-  const baseBeforePrice = baseRecommendedPrice * 1.15
-  const baseAfterPrice = baseRecommendedPrice * 1.2
-
+  
+  // คำนวณวันที่ "ไปก่อน" และ "ไปหลัง" จาก recommendedPeriod
+  // ใช้ startDate ถ้ามี ถ้าไม่มีใช้ bestDeal dates
+  let recommendedStartDate: Date
+  let recommendedEndDate: Date
+  
+  if (startDate) {
+    recommendedStartDate = new Date(startDate)
+    if (endDate && tripType === 'round-trip') {
+      recommendedEndDate = new Date(endDate)
+    } else {
+      // คำนวณวันกลับจาก duration
+      recommendedEndDate = new Date(startDate)
+      recommendedEndDate.setDate(recommendedEndDate.getDate() + Math.round(avgDuration))
+    }
+  } else {
+    // ใช้ bestDeal dates
+    recommendedStartDate = parseBestDealDate(bestDeal.bestDeal.dates)
+    recommendedEndDate = new Date(recommendedStartDate)
+    recommendedEndDate.setDate(recommendedEndDate.getDate() + Math.round(avgDuration))
+  }
+  
+  // คำนวณวันที่ "ไปก่อน" (7 วันก่อน recommendedStartDate)
+  const beforeStartDate = new Date(recommendedStartDate)
+  beforeStartDate.setDate(beforeStartDate.getDate() - 7)
+  const beforeEndDate = new Date(beforeStartDate)
+  beforeEndDate.setDate(beforeEndDate.getDate() + Math.round(avgDuration))
+  
+  // คำนวณวันที่ "ไปหลัง" (7 วันหลัง recommendedStartDate)
+  const afterStartDate = new Date(recommendedStartDate)
+  afterStartDate.setDate(afterStartDate.getDate() + 7)
+  const afterEndDate = new Date(afterStartDate)
+  afterEndDate.setDate(afterEndDate.getDate() + Math.round(avgDuration))
+  
+  // คำนวณราคาสำหรับ "ไปก่อน" และ "ไปหลัง"
+  // ใช้ getCheapestAirlineForSeason เหมือนกับ bestDeal เพื่อให้สอดคล้องกัน
+  const beforeSeason = getSeasonFromDate(beforeStartDate)
+  const beforeSeasonConfig = beforeSeason === 'low' ? seasonConfig.low 
+    : beforeSeason === 'normal' ? seasonConfig.normal 
+    : seasonConfig.high
+  const beforeCheapest = getCheapestAirlineForSeason(
+    origin,
+    destination,
+    selectedAirlines,
+    beforeSeason,
+    beforeSeasonConfig.priceMultiplier,
+    beforeStartDate,
+    new Date()
+  )
+  let beforePrice = beforeCheapest.price
+  if (tripType === 'one-way') {
+    beforePrice = beforePrice * 0.5
+  }
+  
+  // ราคา "ไปหลัง" - ใช้ season ของ afterStartDate
+  const afterSeason = getSeasonFromDate(afterStartDate)
+  const afterSeasonConfig = afterSeason === 'low' ? seasonConfig.low 
+    : afterSeason === 'normal' ? seasonConfig.normal 
+    : seasonConfig.high
+  const afterCheapest = getCheapestAirlineForSeason(
+    origin,
+    destination,
+    selectedAirlines,
+    afterSeason,
+    afterSeasonConfig.priceMultiplier,
+    afterStartDate,
+    new Date()
+  )
+  let afterPrice = afterCheapest.price
+  if (tripType === 'one-way') {
+    afterPrice = afterPrice * 0.5
+  }
+  
+  // คำนวณ difference และ percentage
+  const beforeDifference = beforePrice - baseRecommendedPrice
+  const beforePercentage = Math.round((beforeDifference / baseRecommendedPrice) * 100)
+  
+  const afterDifference = afterPrice - baseRecommendedPrice
+  const afterPercentage = Math.round((afterDifference / baseRecommendedPrice) * 100)
+  
   const priceComparison: PriceComparison = {
     ifGoBefore: {
-      date: '1-8 พฤษภาคม 2025',
-      price: Math.round(baseBeforePrice * passengerCount),
-      difference: Math.round((baseBeforePrice - baseRecommendedPrice) * passengerCount),
-      percentage: 15,
+      date: formatThaiDateRange(beforeStartDate, beforeEndDate),
+      price: Math.round(beforePrice * passengerCount),
+      difference: Math.round(beforeDifference * passengerCount),
+      percentage: beforePercentage,
     },
     ifGoAfter: {
-      date: '23-30 พฤษภาคม 2025',
-      price: Math.round(baseAfterPrice * passengerCount),
-      difference: Math.round((baseAfterPrice - baseRecommendedPrice) * passengerCount),
-      percentage: 20,
+      date: formatThaiDateRange(afterStartDate, afterEndDate),
+      price: Math.round(afterPrice * passengerCount),
+      difference: Math.round(afterDifference * passengerCount),
+      percentage: afterPercentage,
     },
   }
 
