@@ -4,6 +4,7 @@ import { getBasePrice } from '@/services/route-prices'
 import { getSeasonConfig } from '@/services/season-config'
 import { getBestAirline, getBasePriceForRoute, airlineMap } from '@/services/airline-data'
 import { calculatePricingFactors } from '@/services/pricing-factors'
+import { THAI_AIRLINES } from '@/services/constants'
 
 export interface SeasonData {
   type: 'high' | 'normal' | 'low'
@@ -137,6 +138,10 @@ export function analyzeFlightPrices(
     }
   }
 
+  // คำนวณ "สายการบินที่ถูกที่สุด" จากทุกสายการบิน (ไม่ใช่แค่ที่เลือกใน filter)
+  // เพราะ "สายการบินที่ถูกที่สุด" ควรเป็นข้อมูลอ้างอิงที่คงที่ ไม่เปลี่ยนตาม filter
+  const allAirlines = THAI_AIRLINES.map(a => a.value)
+  
   const seasons: SeasonData[] = [
     {
       type: 'low',
@@ -148,7 +153,8 @@ export function analyzeFlightPrices(
       bestDeal: (() => {
         // ใช้ startDate ถ้ามี ถ้าไม่มีให้ใช้ bestDealDates (แปลงเป็น Date)
         const bestDealDate = startDate || parseBestDealDate(seasonConfig.low.bestDealDates)
-        const cheapest = getCheapestAirlineForSeason(origin, destination, selectedAirlines, 'low', seasonConfig.low.priceMultiplier, bestDealDate, new Date())
+        // ใช้ allAirlines แทน selectedAirlines เพื่อคำนวณจากทุกสายการบิน
+        const cheapest = getCheapestAirlineForSeason(origin, destination, allAirlines, 'low', seasonConfig.low.priceMultiplier, bestDealDate, new Date())
         return {
           dates: seasonConfig.low.bestDealDates,
           price: cheapest.price,
@@ -166,7 +172,8 @@ export function analyzeFlightPrices(
       },
       bestDeal: (() => {
         const bestDealDate = startDate || parseBestDealDate(seasonConfig.normal.bestDealDates)
-        const cheapest = getCheapestAirlineForSeason(origin, destination, selectedAirlines, 'normal', seasonConfig.normal.priceMultiplier, bestDealDate, new Date())
+        // ใช้ allAirlines แทน selectedAirlines เพื่อคำนวณจากทุกสายการบิน
+        const cheapest = getCheapestAirlineForSeason(origin, destination, allAirlines, 'normal', seasonConfig.normal.priceMultiplier, bestDealDate, new Date())
         return {
           dates: seasonConfig.normal.bestDealDates,
           price: cheapest.price,
@@ -184,7 +191,8 @@ export function analyzeFlightPrices(
       },
       bestDeal: (() => {
         const bestDealDate = startDate || parseBestDealDate(seasonConfig.high.bestDealDates)
-        const cheapest = getCheapestAirlineForSeason(origin, destination, selectedAirlines, 'high', seasonConfig.high.priceMultiplier, bestDealDate, new Date())
+        // ใช้ allAirlines แทน selectedAirlines เพื่อคำนวณจากทุกสายการบิน
+        const cheapest = getCheapestAirlineForSeason(origin, destination, allAirlines, 'high', seasonConfig.high.priceMultiplier, bestDealDate, new Date())
         return {
           dates: seasonConfig.high.bestDealDates,
           price: cheapest.price,
